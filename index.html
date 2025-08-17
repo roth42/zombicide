@@ -8,36 +8,58 @@
 </head>
 <body>
     <header>
-        <h1>Zombicide Project</h1>
-        <nav>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
+        <h1>Zombicide tool</h1>
     </header>
 
     <main>
-        <section id="home">
-            <h2>Welcome</h2>
-            <p>Welcome to the Zombicide project. This is a static site ready for GitHub Pages deployment.</p>
-        </section>
-
-        <section id="about">
-            <h2>About</h2>
-            <p>This project is built with vanilla HTML, CSS, and JavaScript for maximum compatibility and performance.</p>
-        </section>
-
-        <section id="contact">
-            <h2>Contact</h2>
-            <p>Get in touch with us through our GitHub repository.</p>
+        <section id="game-board">
+            <h2>Zombicide Spawn Points</h2>
+            <div class="spawn-points-container">
+                <div class="spawn-point" id="spawn-1" draggable="true">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="remove-spawn-btn" onclick="removeSpawnPoint('spawn-1')">×</button>
+                    <h3 class="spawn-title" onclick="editTitle(this)" data-original="Spawn Point 1">Spawn Point 1</h3>
+                    <div class="zombie-mob">
+                        <div class="zombie">🧟</div>
+                        <div class="zombie">🧟‍♀️</div>
+                        <div class="zombie">🧟‍♂️</div>
+                        <div class="zombie">🧟</div>
+                    </div>
+                </div>
+                
+                <div class="spawn-point" id="spawn-2" draggable="true">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="remove-spawn-btn" onclick="removeSpawnPoint('spawn-2')">×</button>
+                    <h3 class="spawn-title" onclick="editTitle(this)" data-original="Spawn Point 2">Spawn Point 2</h3>
+                    <div class="zombie-mob">
+                        <div class="zombie">🧟‍♀️</div>
+                        <div class="zombie">🧟</div>
+                        <div class="zombie">🧟‍♂️</div>
+                        <div class="zombie">🧟‍♀️</div>
+                        <div class="zombie">🧟</div>
+                    </div>
+                </div>
+                
+                <div class="spawn-point" id="spawn-3" draggable="true">
+                    <div class="drag-handle">⋮⋮</div>
+                    <button class="remove-spawn-btn" onclick="removeSpawnPoint('spawn-3')">×</button>
+                    <h3 class="spawn-title" onclick="editTitle(this)" data-original="Spawn Point 3">Spawn Point 3</h3>
+                    <div class="zombie-mob">
+                        <div class="zombie">🧟‍♂️</div>
+                        <div class="zombie">🧟‍♀️</div>
+                        <div class="zombie">🧟</div>
+                        <div class="zombie">🧟‍♂️</div>
+                        <div class="zombie">🧟</div>
+                        <div class="zombie">🧟‍♀️</div>
+                    </div>
+                </div>
+                
+                <div class="add-spawn-container">
+                    <button id="add-spawn-btn" class="control-btn">+ Add Spawn Point</button>
+                </div>
+            </div>
         </section>
     </main>
-
-    <footer>
-        <p>&copy; 2024 Zombicide Project. All rights reserved.</p>
-    </footer>
 
     <script src="script.js"></script>
 </body>
