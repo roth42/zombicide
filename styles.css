@@ -74,6 +74,72 @@ section p {
     color: #666;
 }
 
+.hero-level-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(52, 152, 219, 0.1);
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    border-radius: 8px;
+    justify-content: center;
+}
+
+.hero-level-selector label {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.level-dropdown {
+    padding: 0.75rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+}
+
+.level-dropdown:hover {
+    border-color: #3498db;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.level-dropdown:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.level-dropdown option {
+    padding: 0.5rem;
+    font-weight: bold;
+}
+
+.level-dropdown option.level-blue {
+    background: #0066cc;
+    color: white;
+}
+
+.level-dropdown option.level-yellow {
+    background: #ffcc00;
+    color: black;
+}
+
+.level-dropdown option.level-orange {
+    background: #ff6600;
+    color: white;
+}
+
+.level-dropdown option.level-red {
+    background: #cc0000;
+    color: white;
+}
+
 .spawn-points-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -289,6 +355,105 @@ section p {
     animation-delay: 1.5s;
 }
 
+.card-info {
+    margin-top: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem;
+    position: relative;
+    z-index: 2;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-loading {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    text-align: center;
+    font-style: italic;
+}
+
+.card-details {
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 0.25rem;
+}
+
+.card-id {
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.card-level {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.card-level.blue {
+    background: #0066cc;
+    color: white;
+}
+
+.card-level.yellow {
+    background: #ffcc00;
+    color: black;
+}
+
+.card-level.orange {
+    background: #ff6600;
+    color: white;
+}
+
+.card-level.red {
+    background: #cc0000;
+    color: white;
+}
+
+.card-zombies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.zombie-count {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.zombie-count .count {
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.card-special {
+    margin-top: 0.5rem;
+    padding: 0.4rem;
+    background: rgba(255, 215, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #ffd700;
+    font-weight: bold;
+    text-align: center;
+}
+
 @keyframes zombieWalk {
     0%, 100% {
         transform: translateY(0) rotate(-2deg);
@@ -379,5 +544,17 @@ footer {
         width: 25px;
         height: 25px;
         font-size: 1rem;
+    }
+    
+    .hero-level-selector {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+    
+    .level-dropdown {
+        min-width: 120px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
     }
 }

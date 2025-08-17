@@ -14,6 +14,15 @@
     <main>
         <section id="game-board">
             <h2>Zombicide Spawn Points</h2>
+            <div class="hero-level-selector">
+                <label for="hero-level">Highest Hero Level:</label>
+                <select id="hero-level" class="level-dropdown">
+                    <option value="1" class="level-blue">Blue (Level 1)</option>
+                    <option value="2" class="level-yellow">Yellow (Level 2)</option>
+                    <option value="3" class="level-orange">Orange (Level 3)</option>
+                    <option value="4" class="level-red">Red (Level 4)</option>
+                </select>
+            </div>
             <div class="spawn-points-container">
                 <div class="spawn-point" id="spawn-1" draggable="true">
                     <div class="drag-handle">⋮⋮</div>
@@ -24,6 +33,9 @@
                         <div class="zombie">🧟‍♀️</div>
                         <div class="zombie">🧟‍♂️</div>
                         <div class="zombie">🧟</div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-loading">Drawing card...</div>
                     </div>
                 </div>
                 
@@ -37,6 +49,9 @@
                         <div class="zombie">🧟‍♂️</div>
                         <div class="zombie">🧟‍♀️</div>
                         <div class="zombie">🧟</div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-loading">Drawing card...</div>
                     </div>
                 </div>
                 
@@ -52,6 +67,9 @@
                         <div class="zombie">🧟</div>
                         <div class="zombie">🧟‍♀️</div>
                     </div>
+                    <div class="card-info">
+                        <div class="card-loading">Drawing card...</div>
+                    </div>
                 </div>
                 
                 <div class="add-spawn-container">
@@ -61,6 +79,7 @@
         </section>
     </main>
 
+    <script src="data/zombicide-cards.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

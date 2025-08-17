@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const navLinks = document.querySelectorAll('nav a[href^="#"]');
     const sections = document.querySelectorAll('section');
 
@@ -43,7 +43,151 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('scroll', updateActiveNav);
     updateActiveNav();
 
+    // Load Zombicide card data
+    let cardsLoaded = false;
+    try {
+        cardsLoaded = await ZombicideCards.loadData();
+        console.log('Zombicide cards loaded successfully!');
+    } catch (error) {
+        console.warn('Could not load Zombicide cards:', error);
+    }
+
     let spawnPointCounter = 3;
+
+    // Function to create card display HTML
+    function createCardDisplay(card) {
+        if (!card) {
+            return '<div class="card-loading">No card data available</div>';
+        }
+
+        const levelClass = card.levelName.toLowerCase();
+        const zombieTypes = ZombicideCards.metadata.zombieTypes;
+        
+        let zombiesHTML = '';
+        let hasZombies = false;
+
+        // Check each zombie type
+        zombieTypes.forEach(type => {
+            const fieldName = type.name.toLowerCase().replace(/[^a-z]/g, '');
+            let count = 0;
+            
+            // Map zombie type names to card fields
+            switch (type.name) {
+                case 'Walker':
+                    count = card.walker || 0;
+                    break;
+                case 'Fatty':
+                    count = card.fatty || 0;
+                    break;
+                case 'Runner':
+                    count = card.runner || 0;
+                    break;
+                case 'Abomination':
+                    count = card.abomination || 0;
+                    break;
+                case 'Wolfz':
+                    count = card.wolfz || 0;
+                    break;
+                case 'Wolfbomination':
+                    count = card.wolfbomination || 0;
+                    break;
+                case 'Deadeye Walkers':
+                    count = card.deadeyeWalkers || 0;
+                    break;
+                case 'Murder of Crowz':
+                    count = card.murderOfCrowz || 0;
+                    break;
+                case 'Necromancer':
+                    count = card.necromancer || 0;
+                    break;
+            }
+
+            if (count > 0) {
+                hasZombies = true;
+                zombiesHTML += `
+                    <div class="zombie-count">
+                        <span class="count">${count}</span>
+                        <span class="emoji">${type.emoji}</span>
+                        <span class="name">${type.name}</span>
+                    </div>
+                `;
+            }
+        });
+
+        // Handle "Nothing" cards
+        if (card.nothing > 0) {
+            zombiesHTML = '<div class="zombie-count"><span class="count">Nothing spawns</span></div>';
+            hasZombies = true;
+        }
+
+        // Special effects
+        let specialHTML = '';
+        if (card.specialAbomination) {
+            specialHTML += `<div class="card-special">🎯 ${card.specialAbomination}</div>`;
+        }
+        if (card.specialNecromancer) {
+            specialHTML += `<div class="card-special">🔮 ${card.specialNecromancer}</div>`;
+        }
+        if (card.doubleSpawn) {
+            specialHTML += `<div class="card-special">⚡ Double Spawn</div>`;
+        }
+        if (card.extraActivation) {
+            specialHTML += `<div class="card-special">🔄 Extra Activation</div>`;
+        }
+
+        return `
+            <div class="card-details">
+                <div class="card-header">
+                    <span class="card-id">Card #${card.id}</span>
+                    <span class="card-level ${levelClass}">${card.levelName}</span>
+                </div>
+                <div class="card-zombies">
+                    ${zombiesHTML}
+                </div>
+                ${specialHTML}
+            </div>
+        `;
+    }
+
+    // Function to get current selected hero level
+    function getCurrentHeroLevel() {
+        const selector = document.getElementById('hero-level');
+        return selector ? parseInt(selector.value) : 1;
+    }
+
+    // Function to assign a random card to a spawn point
+    function assignRandomCard(spawnPointElement) {
+        const cardInfo = spawnPointElement.querySelector('.card-info');
+        
+        if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
+            cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
+            return;
+        }
+
+        // Use the selected hero level
+        const level = getCurrentHeroLevel();
+
+        // Get random card from that level
+        const card = ZombicideCards.helpers.getRandomCard(level);
+        
+        if (card) {
+            cardInfo.innerHTML = createCardDisplay(card);
+            // Store card data on the element for future reference
+            spawnPointElement.dataset.cardId = card.id;
+        } else {
+            cardInfo.innerHTML = '<div class="card-loading">No cards available for this level</div>';
+        }
+    }
+
+    // Function to refresh all spawn point cards when level changes
+    function refreshAllCards() {
+        const spawnPoints = document.querySelectorAll('.spawn-point');
+        spawnPoints.forEach(spawnPoint => {
+            const cardInfo = spawnPoint.querySelector('.card-info');
+            cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
+            setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 300 + 100);
+        });
+    }
 
     function addSpawnPoint() {
         spawnPointCounter++;
@@ -68,6 +212,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="zombie-mob">
                     ${zombieHTML}
                 </div>
+                <div class="card-info">
+                    <div class="card-loading">Drawing card...</div>
+                </div>
             </div>
         `;
         
@@ -75,6 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         container.insertBefore(newElement, addButton);
         
         setupDragAndDrop(newElement);
+        
+        // Assign a random card to the new spawn point
+        setTimeout(() => assignRandomCard(newElement), 100);
     }
 
     function setupDragAndDrop(spawnPoint) {
@@ -162,7 +312,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('add-spawn-btn').addEventListener('click', addSpawnPoint);
     
+    // Add event listener for hero level changes
+    document.getElementById('hero-level').addEventListener('change', function() {
+        console.log('Hero level changed to:', this.value);
+        refreshAllCards();
+    });
+    
     setupAllDragAndDrop();
+
+    // Initialize cards for existing spawn points
+    function initializeExistingSpawnPoints() {
+        const existingSpawnPoints = document.querySelectorAll('.spawn-point');
+        existingSpawnPoints.forEach(spawnPoint => {
+            setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 500 + 100);
+        });
+    }
+
+    // Initialize existing spawn points with cards
+    if (cardsLoaded) {
+        initializeExistingSpawnPoints();
+    } else {
+        // If cards aren't loaded yet, try again after a short delay
+        setTimeout(() => {
+            if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
+                initializeExistingSpawnPoints();
+            }
+        }, 1000);
+    }
 
     console.log('Zombicide project initialized successfully!');
 });
