@@ -1,3 +1,55 @@
+// Session management
+const SESSION_KEY = 'zombicide-session';
+
+function saveSession() {
+    const spawnPoints = Array.from(document.querySelectorAll('.spawn-point')).map(sp => ({
+        id: sp.id,
+        title: sp.querySelector('.spawn-title').textContent,
+        cardId: sp.dataset.cardId || null
+    }));
+    
+    const session = {
+        heroLevel: getCurrentHeroLevel(),
+        wolfzEnabled: isWolfzEnabled(),
+        spawnPoints: spawnPoints,
+        spawnPointCounter: spawnPointCounter
+    };
+    
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function loadSession() {
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (!saved) return null;
+    
+    try {
+        return JSON.parse(saved);
+    } catch (error) {
+        console.warn('Failed to parse saved session:', error);
+        return null;
+    }
+}
+
+function resetSession() {
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+}
+
+// Function to get current selected hero level
+function getCurrentHeroLevel() {
+    const selector = document.getElementById('hero-level');
+    return selector ? parseInt(selector.value) : 1;
+}
+
+// Function to check if Wolfz is enabled
+function isWolfzEnabled() {
+    const wolfzToggle = document.getElementById('wolfz-enabled');
+    return wolfzToggle ? wolfzToggle.checked : true;
+}
+
+// Global spawn point counter
+let spawnPointCounter = 3;
+
 document.addEventListener('DOMContentLoaded', async function() {
     const navLinks = document.querySelectorAll('nav a[href^="#"]');
     const sections = document.querySelectorAll('section');
@@ -42,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.addEventListener('scroll', updateActiveNav);
     updateActiveNav();
-
+    
     // Load Zombicide card data
     let cardsLoaded = false;
     try {
@@ -52,7 +104,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.warn('Could not load Zombicide cards:', error);
     }
 
-    let spawnPointCounter = 3;
+
+    // Function to get emoji for extra activation zombie types
+    function getZombieEmojiForActivation(zombieType) {
+        switch (zombieType.toLowerCase()) {
+            case 'walkers':
+                return '🧟';
+            case 'fatties':
+                return '🧟‍♂️';
+            case 'runners':
+                return '🏃‍♀️';
+            case 'abomination':
+            case 'abomination"': // Handle potential quote in data
+                return '👹';
+            case 'no one':
+                return '❌';
+            default:
+                return '🔄';
+        }
+    }
 
     // Function to create card display HTML
     function createCardDisplay(card) {
@@ -64,11 +134,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const zombieTypes = ZombicideCards.metadata.zombieTypes;
         
         let zombiesHTML = '';
-        let hasZombies = false;
 
         // Check each zombie type
         zombieTypes.forEach(type => {
-            const fieldName = type.name.toLowerCase().replace(/[^a-z]/g, '');
             let count = 0;
             
             // Map zombie type names to card fields
@@ -103,7 +171,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (count > 0) {
-                hasZombies = true;
                 zombiesHTML += `
                     <div class="zombie-count">
                         <span class="count">${count}</span>
@@ -117,22 +184,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Handle "Nothing" cards
         if (card.nothing > 0) {
             zombiesHTML = '<div class="zombie-count"><span class="count">Nothing spawns</span></div>';
-            hasZombies = true;
         }
 
         // Special effects
         let specialHTML = '';
-        if (card.specialAbomination) {
-            specialHTML += `<div class="card-special">🎯 ${card.specialAbomination}</div>`;
-        }
-        if (card.specialNecromancer) {
-            specialHTML += `<div class="card-special">🔮 ${card.specialNecromancer}</div>`;
-        }
+        // Note: specialAbomination and specialNecromancer are not displayed to users
+        // They are used internally for card categorization only
         if (card.doubleSpawn) {
             specialHTML += `<div class="card-special">⚡ Double Spawn</div>`;
         }
         if (card.extraActivation) {
-            specialHTML += `<div class="card-special">🔄 Extra Activation</div>`;
+            const zombieType = card.extraActivation;
+            const emoji = getZombieEmojiForActivation(zombieType);
+            specialHTML += `<div class="card-special">🔄 Extra Activation: ${emoji} ${zombieType}</div>`;
         }
 
         return `
@@ -149,12 +213,140 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
     }
 
-    // Function to get current selected hero level
-    function getCurrentHeroLevel() {
+    
+    // Function to set hero level
+    function setHeroLevel(level) {
         const selector = document.getElementById('hero-level');
-        return selector ? parseInt(selector.value) : 1;
+        if (selector) {
+            selector.value = level;
+        }
+    }
+    
+    // Function to set Wolfz enabled state
+    function setWolfzEnabled(enabled) {
+        const wolfzToggle = document.getElementById('wolfz-enabled');
+        if (wolfzToggle) {
+            wolfzToggle.checked = enabled;
+        }
     }
 
+    // Function to get available cards based on level and Wolfz setting
+    function getAvailableCards(level) {
+        if (!ZombicideCards.cards || ZombicideCards.cards.length === 0) {
+            return [];
+        }
+
+        // Get cards for the selected level
+        let availableCards = ZombicideCards.cards.filter(card => card.level === level);
+
+        // Filter by expansion based on Wolfz setting
+        if (isWolfzEnabled()) {
+            // Include base game and wolfz expansion cards
+            availableCards = availableCards.filter(card => 
+                card.expansion === 'base' || card.expansion === 'wolfz'
+            );
+        } else {
+            // Include only base game cards
+            availableCards = availableCards.filter(card => 
+                card.expansion === 'base'
+            );
+        }
+
+        return availableCards;
+    }
+
+    // Function to update zombie display based on card data
+    function updateZombieDisplay(spawnPointElement, card) {
+        const zombieMob = spawnPointElement.querySelector('.zombie-mob');
+        if (!zombieMob || !card) return;
+        
+        let zombieHTML = '';
+        
+        // Show actual zombies from the card
+        if (card.walker > 0) {
+            for (let i = 0; i < card.walker; i++) {
+                zombieHTML += '<div class="zombie" title="Walker">🧟</div>';
+            }
+        }
+        if (card.fatty > 0) {
+            for (let i = 0; i < card.fatty; i++) {
+                zombieHTML += '<div class="zombie" title="Fatty">🧟‍♂️</div>';
+            }
+        }
+        if (card.runner > 0) {
+            for (let i = 0; i < card.runner; i++) {
+                zombieHTML += '<div class="zombie" title="Runner">🏃‍♀️</div>';
+            }
+        }
+        if (card.abomination > 0) {
+            for (let i = 0; i < card.abomination; i++) {
+                zombieHTML += '<div class="zombie" title="Abomination">👹</div>';
+            }
+        }
+        if (card.wolfz > 0) {
+            for (let i = 0; i < card.wolfz; i++) {
+                zombieHTML += '<div class="zombie" title="Wolfz">🐺</div>';
+            }
+        }
+        if (card.wolfbomination > 0) {
+            for (let i = 0; i < card.wolfbomination; i++) {
+                zombieHTML += '<div class="zombie" title="Wolfbomination">🐺👹</div>';
+            }
+        }
+        if (card.necromancer > 0) {
+            for (let i = 0; i < card.necromancer; i++) {
+                zombieHTML += '<div class="zombie" title="Necromancer">🧙‍♂️</div>';
+            }
+        }
+        if (card.deadeyeWalkers > 0) {
+            for (let i = 0; i < card.deadeyeWalkers; i++) {
+                zombieHTML += '<div class="zombie" title="Deadeye Walkers">🎯🧟</div>';
+            }
+        }
+        if (card.murderOfCrowz > 0) {
+            for (let i = 0; i < card.murderOfCrowz; i++) {
+                zombieHTML += '<div class="zombie" title="Murder of Crowz">🐦‍⬛</div>';
+            }
+        }
+        if (card.npc > 0) {
+            for (let i = 0; i < card.npc; i++) {
+                zombieHTML += '<div class="zombie" title="NPC">👤</div>';
+            }
+        }
+        
+        // Handle nothing cards
+        if (card.nothing > 0) {
+            zombieHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
+        }
+        
+        // If no zombies, show empty state
+        if (!zombieHTML) {
+            zombieHTML = '<div class="zombie" title="No zombies">⭕</div>';
+        }
+        
+        zombieMob.innerHTML = zombieHTML;
+    }
+    
+    // Function to assign a specific card by ID to a spawn point
+    function assignSpecificCard(spawnPointElement, cardId) {
+        const cardInfo = spawnPointElement.querySelector('.card-info');
+        
+        if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
+            cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
+            return;
+        }
+        
+        const card = ZombicideCards.cards.find(c => c.id == cardId);
+        if (card) {
+            cardInfo.innerHTML = createCardDisplay(card);
+            spawnPointElement.dataset.cardId = card.id;
+            updateZombieDisplay(spawnPointElement, card);
+        } else {
+            // Fallback to random card if specific card not found
+            assignRandomCard(spawnPointElement);
+        }
+    }
+    
     // Function to assign a random card to a spawn point
     function assignRandomCard(spawnPointElement) {
         const cardInfo = spawnPointElement.querySelector('.card-info');
@@ -164,18 +356,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // Use the selected hero level
+        // Use the selected hero level and Wolfz setting
         const level = getCurrentHeroLevel();
+        const availableCards = getAvailableCards(level);
 
-        // Get random card from that level
-        const card = ZombicideCards.helpers.getRandomCard(level);
-        
-        if (card) {
+        if (availableCards.length > 0) {
+            // Get random card from available cards
+            const randomIndex = Math.floor(Math.random() * availableCards.length);
+            const card = availableCards[randomIndex];
+            
             cardInfo.innerHTML = createCardDisplay(card);
             // Store card data on the element for future reference
             spawnPointElement.dataset.cardId = card.id;
+            
+            // Update zombie display to match the card
+            updateZombieDisplay(spawnPointElement, card);
+            
+            // Save session after assigning card
+            setTimeout(() => saveSession(), 100);
         } else {
-            cardInfo.innerHTML = '<div class="card-loading">No cards available for this level</div>';
+            cardInfo.innerHTML = '<div class="card-loading">No cards available for current settings</div>';
         }
     }
 
@@ -189,28 +389,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    function addSpawnPoint() {
+    function addSpawnPoint(title = null, cardId = null) {
         spawnPointCounter++;
         const container = document.querySelector('.spawn-points-container');
         const addButton = document.querySelector('.add-spawn-container');
         const newSpawnId = `spawn-${spawnPointCounter}`;
         
-        const zombieTypes = ['🧟', '🧟‍♀️', '🧟‍♂️'];
-        const zombieCount = Math.floor(Math.random() * 6) + 3;
-        let zombieHTML = '';
-        
-        for (let i = 0; i < zombieCount; i++) {
-            const randomZombie = zombieTypes[Math.floor(Math.random() * zombieTypes.length)];
-            zombieHTML += `<div class="zombie">${randomZombie}</div>`;
-        }
+        const spawnTitle = title || `Spawn Point ${spawnPointCounter}`;
         
         const spawnPointHTML = `
             <div class="spawn-point" id="${newSpawnId}" draggable="true">
                 <div class="drag-handle">⋮⋮</div>
                 <button class="remove-spawn-btn" onclick="removeSpawnPoint('${newSpawnId}')">×</button>
-                <h3 class="spawn-title" onclick="editTitle(this)" data-original="Spawn Point ${spawnPointCounter}">Spawn Point ${spawnPointCounter}</h3>
+                <h3 class="spawn-title" onclick="editTitle(this)" data-original="${spawnTitle}">${spawnTitle}</h3>
                 <div class="zombie-mob">
-                    ${zombieHTML}
+                    <div class="zombie" title="Loading...">⏳</div>
                 </div>
                 <div class="card-info">
                     <div class="card-loading">Drawing card...</div>
@@ -223,8 +416,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         setupDragAndDrop(newElement);
         
-        // Assign a random card to the new spawn point
-        setTimeout(() => assignRandomCard(newElement), 100);
+        // Assign a card to the new spawn point (either saved or random)
+        setTimeout(() => {
+            if (cardId) {
+                assignSpecificCard(newElement, cardId);
+            } else {
+                assignRandomCard(newElement);
+            }
+        }, 100);
+        
+        // Save session after adding spawn point
+        setTimeout(() => saveSession(), 200);
     }
 
     function setupDragAndDrop(spawnPoint) {
@@ -310,34 +512,124 @@ document.addEventListener('DOMContentLoaded', async function() {
         return false;
     }
 
-    document.getElementById('add-spawn-btn').addEventListener('click', addSpawnPoint);
+    document.getElementById('add-spawn-btn').addEventListener('click', function() {
+        addSpawnPoint();
+    });
+    
+    // Add event listener for spawn all button
+    document.getElementById('spawn-all-btn').addEventListener('click', function() {
+        console.log('Spawning new cards for all spawn points');
+        refreshAllCards();
+    });
+    
+    // Add event listener for reset session button
+    document.getElementById('reset-session-btn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the session? This will clear all spawn points and settings.')) {
+            resetSession();
+        }
+    });
     
     // Add event listener for hero level changes
     document.getElementById('hero-level').addEventListener('change', function() {
         console.log('Hero level changed to:', this.value);
         refreshAllCards();
+        saveSession();
+    });
+
+    // Add event listener for Wolfz toggle changes
+    document.getElementById('wolfz-enabled').addEventListener('change', function() {
+        console.log('Wolfz expansion', this.checked ? 'enabled' : 'disabled');
+        refreshAllCards();
+        saveSession();
     });
     
     setupAllDragAndDrop();
-
-    // Initialize cards for existing spawn points
-    function initializeExistingSpawnPoints() {
+    
+    // Load saved session or initialize default
+    const savedSession = loadSession();
+    if (savedSession) {
+        // Restore session data immediately (regardless of cards loaded status)
+        setHeroLevel(savedSession.heroLevel);
+        setWolfzEnabled(savedSession.wolfzEnabled);
+        spawnPointCounter = savedSession.spawnPointCounter || 3;
+        
+        // Remove existing spawn points (except the ones we want to restore)
+        const container = document.querySelector('.spawn-points-container');
+        const existingSpawnPoints = container.querySelectorAll('.spawn-point');
+        existingSpawnPoints.forEach(sp => sp.remove());
+        
+        // Restore spawn points from session
+        if (savedSession.spawnPoints && savedSession.spawnPoints.length > 0) {
+            savedSession.spawnPoints.forEach((spData) => {
+                // Create spawn point with restored data
+                
+                const spawnPointHTML = `
+                    <div class="spawn-point" id="${spData.id}" draggable="true">
+                        <div class="drag-handle">⋮⋮</div>
+                        <button class="remove-spawn-btn" onclick="removeSpawnPoint('${spData.id}')">×</button>
+                        <h3 class="spawn-title" onclick="editTitle(this)" data-original="${spData.title}">${spData.title}</h3>
+                        <div class="zombie-mob">
+                            <div class="zombie" title="Loading...">⏳</div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-loading">Loading saved card...</div>
+                        </div>
+                    </div>
+                `;
+                
+                const addButton = container.querySelector('.add-spawn-container');
+                const newElement = document.createRange().createContextualFragment(spawnPointHTML).firstElementChild;
+                container.insertBefore(newElement, addButton);
+                
+                setupDragAndDrop(newElement);
+                
+                // Restore the specific card when cards are loaded
+                if (cardsLoaded) {
+                    setTimeout(() => {
+                        if (spData.cardId) {
+                            assignSpecificCard(newElement, spData.cardId);
+                        } else {
+                            assignRandomCard(newElement);
+                        }
+                    }, Math.random() * 300 + 100);
+                } else {
+                    // Wait for cards to load, then restore
+                    const waitForCards = setInterval(() => {
+                        if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
+                            clearInterval(waitForCards);
+                            if (spData.cardId) {
+                                assignSpecificCard(newElement, spData.cardId);
+                            } else {
+                                assignRandomCard(newElement);
+                            }
+                        }
+                    }, 100);
+                }
+            });
+        } else {
+            // No saved spawn points, initialize default ones
+            initializeDefaultSpawnPoints();
+        }
+    } else {
+        // No saved session, initialize default spawn points
+        initializeDefaultSpawnPoints();
+    }
+    
+    function initializeDefaultSpawnPoints() {
         const existingSpawnPoints = document.querySelectorAll('.spawn-point');
         existingSpawnPoints.forEach(spawnPoint => {
-            setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 500 + 100);
-        });
-    }
-
-    // Initialize existing spawn points with cards
-    if (cardsLoaded) {
-        initializeExistingSpawnPoints();
-    } else {
-        // If cards aren't loaded yet, try again after a short delay
-        setTimeout(() => {
-            if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
-                initializeExistingSpawnPoints();
+            if (cardsLoaded) {
+                setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 500 + 100);
+            } else {
+                // Wait for cards to load
+                const waitForCards = setInterval(() => {
+                    if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
+                        clearInterval(waitForCards);
+                        assignRandomCard(spawnPoint);
+                    }
+                }, 100);
             }
-        }, 1000);
+        });
     }
 
     console.log('Zombicide project initialized successfully!');

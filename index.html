@@ -15,13 +15,26 @@
         <section id="game-board">
             <h2>Zombicide Spawn Points</h2>
             <div class="hero-level-selector">
-                <label for="hero-level">Highest Hero Level:</label>
-                <select id="hero-level" class="level-dropdown">
-                    <option value="1" class="level-blue">Blue (Level 1)</option>
-                    <option value="2" class="level-yellow">Yellow (Level 2)</option>
-                    <option value="3" class="level-orange">Orange (Level 3)</option>
-                    <option value="4" class="level-red">Red (Level 4)</option>
-                </select>
+                <div class="level-control">
+                    <label for="hero-level">Highest Hero Level:</label>
+                    <select id="hero-level" class="level-dropdown">
+                        <option value="1" class="level-blue">Blue (Level 1)</option>
+                        <option value="2" class="level-yellow">Yellow (Level 2)</option>
+                        <option value="3" class="level-orange">Orange (Level 3)</option>
+                        <option value="4" class="level-red">Red (Level 4)</option>
+                    </select>
+                </div>
+                <div class="wolfz-toggle">
+                    <label for="wolfz-enabled" class="toggle-label">Wolfz</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="wolfz-enabled" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="spawn-control">
+                    <button id="spawn-all-btn" class="spawn-btn">Spawn</button>
+                    <button id="reset-session-btn" class="reset-btn">Reset Session</button>
+                </div>
             </div>
             <div class="spawn-points-container">
                 <div class="spawn-point" id="spawn-1" draggable="true">
