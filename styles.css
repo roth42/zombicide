@@ -404,6 +404,131 @@ section p {
     background: rgba(149, 165, 166, 0.1);
 }
 
+/* Double Spawn visual effects */
+.spawn-point.double-spawn-source {
+    border-color: #f39c12;
+    box-shadow: 0 0 20px rgba(243, 156, 18, 0.6);
+    animation: doubleSpawnPulse 2s infinite;
+}
+
+.spawn-point.double-spawn-target {
+    border-color: #e74c3c;
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+    animation: targetPulse 1.5s infinite;
+}
+
+.spawn-point.double-spawn-nothing {
+    background: linear-gradient(135deg, #7f8c8d, #95a5a6) !important;
+    opacity: 0.7;
+}
+
+@keyframes doubleSpawnPulse {
+    0%, 100% { 
+        border-color: #f39c12; 
+        box-shadow: 0 0 10px rgba(243, 156, 18, 0.6);
+    }
+    50% { 
+        border-color: #e67e22; 
+        box-shadow: 0 0 25px rgba(243, 156, 18, 0.8);
+    }
+}
+
+@keyframes targetPulse {
+    0%, 100% { 
+        border-color: #e74c3c; 
+        box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+    }
+    50% { 
+        border-color: #c0392b; 
+        box-shadow: 0 0 30px rgba(231, 76, 60, 0.9);
+    }
+}
+
+.spawn-status {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    position: relative;
+    z-index: 3;
+    text-align: center;
+}
+
+.spawn-status.double-spawn-nothing {
+    background: rgba(241, 196, 15, 0.9);
+    color: #2c3e50;
+}
+
+.spawn-status.double-spawn-resolved {
+    background: rgba(46, 204, 113, 0.9);
+    color: white;
+}
+
+.spawn-status.error {
+    background: rgba(231, 76, 60, 0.9);
+    color: white;
+}
+
+/* Multi-card display styles */
+.multi-card-display {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 0.75rem;
+    color: white;
+}
+
+.multi-card-header {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.card-count {
+    font-weight: bold;
+    color: #3498db;
+    font-size: 1rem;
+}
+
+.mini-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mini-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem;
+    border-left: 3px solid #3498db;
+}
+
+.mini-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.mini-card .card-id {
+    font-size: 0.8rem;
+    color: #bdc3c7;
+}
+
+.mini-card .card-level {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.3rem;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.mini-special {
+    font-size: 0.75rem;
+    color: #f39c12;
+    margin-top: 0.25rem;
+}
+
 .spawn-point h3 {
     color: #ff6b6b;
     margin-bottom: 1rem;

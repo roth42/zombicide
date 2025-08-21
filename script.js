@@ -5,7 +5,7 @@ function saveSession() {
     const spawnPoints = Array.from(document.querySelectorAll('.spawn-point')).map(sp => ({
         id: sp.id,
         title: sp.querySelector('.spawn-title').textContent,
-        cardId: sp.dataset.cardId || null
+        cardIds: sp.dataset.cardIds ? JSON.parse(sp.dataset.cardIds) : []
     }));
     
     const session = {
@@ -213,6 +213,47 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
     }
 
+    // Function to create multi-card display HTML
+    function createMultiCardDisplay(cards) {
+        if (!cards || cards.length === 0) {
+            return '<div class="card-loading">No cards drawn</div>';
+        }
+
+        if (cards.length === 1) {
+            return createCardDisplay(cards[0]);
+        }
+
+        // Multiple cards - create a compact summary view
+        const cardCount = cards.length;
+        let cardsHTML = '';
+
+        cards.forEach((card, index) => {
+            const levelClass = card.levelName.toLowerCase();
+            cardsHTML += `
+                <div class="mini-card">
+                    <div class="mini-card-header">
+                        <span class="card-id">Card #${card.id}</span>
+                        <span class="card-level ${levelClass}">${card.levelName}</span>
+                    </div>
+                    ${card.doubleSpawn ? '<div class="mini-special">⚡ Double Spawn</div>' : ''}
+                    ${card.extraActivation ? '<div class="mini-special">🔄 Extra Activation</div>' : ''}
+                    ${card.nothing > 0 ? '<div class="mini-special">❌ Nothing</div>' : ''}
+                </div>
+            `;
+        });
+
+        return `
+            <div class="multi-card-display">
+                <div class="multi-card-header">
+                    <span class="card-count">${cardCount} Cards Drawn</span>
+                </div>
+                <div class="mini-cards-container">
+                    ${cardsHTML}
+                </div>
+            </div>
+        `;
+    }
+
     
     // Function to set hero level
     function setHeroLevel(level) {
@@ -255,67 +296,77 @@ document.addEventListener('DOMContentLoaded', async function() {
         return availableCards;
     }
 
-    // Function to update zombie display based on card data
-    function updateZombieDisplay(spawnPointElement, card) {
+    // Function to update zombie display based on multiple cards
+    function updateZombieDisplayFromCards(spawnPointElement, cards) {
         const zombieMob = spawnPointElement.querySelector('.zombie-mob');
-        if (!zombieMob || !card) return;
+        if (!zombieMob || !cards || cards.length === 0) return;
+        
+        // Aggregate all zombies from all cards
+        const zombieTotals = {
+            walker: 0,
+            fatty: 0,
+            runner: 0,
+            abomination: 0,
+            wolfz: 0,
+            wolfbomination: 0,
+            necromancer: 0,
+            deadeyeWalkers: 0,
+            murderOfCrowz: 0,
+            npc: 0,
+            nothing: 0
+        };
+
+        // Sum up zombies from all cards
+        cards.forEach(card => {
+            zombieTotals.walker += card.walker || 0;
+            zombieTotals.fatty += card.fatty || 0;
+            zombieTotals.runner += card.runner || 0;
+            zombieTotals.abomination += card.abomination || 0;
+            zombieTotals.wolfz += card.wolfz || 0;
+            zombieTotals.wolfbomination += card.wolfbomination || 0;
+            zombieTotals.necromancer += card.necromancer || 0;
+            zombieTotals.deadeyeWalkers += card.deadeyeWalkers || 0;
+            zombieTotals.murderOfCrowz += card.murderOfCrowz || 0;
+            zombieTotals.npc += card.npc || 0;
+            zombieTotals.nothing += card.nothing || 0;
+        });
         
         let zombieHTML = '';
         
-        // Show actual zombies from the card
-        if (card.walker > 0) {
-            for (let i = 0; i < card.walker; i++) {
-                zombieHTML += '<div class="zombie" title="Walker">🧟</div>';
-            }
+        // Show aggregated zombies
+        for (let i = 0; i < zombieTotals.walker; i++) {
+            zombieHTML += '<div class="zombie" title="Walker">🧟</div>';
         }
-        if (card.fatty > 0) {
-            for (let i = 0; i < card.fatty; i++) {
-                zombieHTML += '<div class="zombie" title="Fatty">🧟‍♂️</div>';
-            }
+        for (let i = 0; i < zombieTotals.fatty; i++) {
+            zombieHTML += '<div class="zombie" title="Fatty">🧟‍♂️</div>';
         }
-        if (card.runner > 0) {
-            for (let i = 0; i < card.runner; i++) {
-                zombieHTML += '<div class="zombie" title="Runner">🏃‍♀️</div>';
-            }
+        for (let i = 0; i < zombieTotals.runner; i++) {
+            zombieHTML += '<div class="zombie" title="Runner">🏃‍♀️</div>';
         }
-        if (card.abomination > 0) {
-            for (let i = 0; i < card.abomination; i++) {
-                zombieHTML += '<div class="zombie" title="Abomination">👹</div>';
-            }
+        for (let i = 0; i < zombieTotals.abomination; i++) {
+            zombieHTML += '<div class="zombie" title="Abomination">👹</div>';
         }
-        if (card.wolfz > 0) {
-            for (let i = 0; i < card.wolfz; i++) {
-                zombieHTML += '<div class="zombie" title="Wolfz">🐺</div>';
-            }
+        for (let i = 0; i < zombieTotals.wolfz; i++) {
+            zombieHTML += '<div class="zombie" title="Wolfz">🐺</div>';
         }
-        if (card.wolfbomination > 0) {
-            for (let i = 0; i < card.wolfbomination; i++) {
-                zombieHTML += '<div class="zombie" title="Wolfbomination">🐺👹</div>';
-            }
+        for (let i = 0; i < zombieTotals.wolfbomination; i++) {
+            zombieHTML += '<div class="zombie" title="Wolfbomination">🐺👹</div>';
         }
-        if (card.necromancer > 0) {
-            for (let i = 0; i < card.necromancer; i++) {
-                zombieHTML += '<div class="zombie" title="Necromancer">🧙‍♂️</div>';
-            }
+        for (let i = 0; i < zombieTotals.necromancer; i++) {
+            zombieHTML += '<div class="zombie" title="Necromancer">🧙‍♂️</div>';
         }
-        if (card.deadeyeWalkers > 0) {
-            for (let i = 0; i < card.deadeyeWalkers; i++) {
-                zombieHTML += '<div class="zombie" title="Deadeye Walkers">🎯🧟</div>';
-            }
+        for (let i = 0; i < zombieTotals.deadeyeWalkers; i++) {
+            zombieHTML += '<div class="zombie" title="Deadeye Walkers">🎯🧟</div>';
         }
-        if (card.murderOfCrowz > 0) {
-            for (let i = 0; i < card.murderOfCrowz; i++) {
-                zombieHTML += '<div class="zombie" title="Murder of Crowz">🐦‍⬛</div>';
-            }
+        for (let i = 0; i < zombieTotals.murderOfCrowz; i++) {
+            zombieHTML += '<div class="zombie" title="Murder of Crowz">🐦‍⬛</div>';
         }
-        if (card.npc > 0) {
-            for (let i = 0; i < card.npc; i++) {
-                zombieHTML += '<div class="zombie" title="NPC">👤</div>';
-            }
+        for (let i = 0; i < zombieTotals.npc; i++) {
+            zombieHTML += '<div class="zombie" title="NPC">👤</div>';
         }
         
-        // Handle nothing cards
-        if (card.nothing > 0) {
+        // Handle nothing cards - if any card is a "nothing" card
+        if (zombieTotals.nothing > 0) {
             zombieHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
         }
         
@@ -326,34 +377,44 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         zombieMob.innerHTML = zombieHTML;
     }
-    
-    // Function to assign a specific card by ID to a spawn point
-    function assignSpecificCard(spawnPointElement, cardId) {
-        const cardInfo = spawnPointElement.querySelector('.card-info');
-        
-        if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
-            cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
-            return;
-        }
-        
-        const card = ZombicideCards.cards.find(c => c.id == cardId);
-        if (card) {
-            cardInfo.innerHTML = createCardDisplay(card);
-            spawnPointElement.dataset.cardId = card.id;
-            updateZombieDisplay(spawnPointElement, card);
-        } else {
-            // Fallback to random card if specific card not found
-            assignRandomCard(spawnPointElement);
-        }
+
+    // Function to update zombie display based on card data (legacy support)
+    function updateZombieDisplay(spawnPointElement, card) {
+        updateZombieDisplayFromCards(spawnPointElement, [card]);
     }
     
-    // Function to assign a random card to a spawn point
-    function assignRandomCard(spawnPointElement) {
+    // Function to assign specific cards by IDs to a spawn point
+    function assignSpecificCards(spawnPointElement, cardIds) {
         const cardInfo = spawnPointElement.querySelector('.card-info');
         
         if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
             cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
             return;
+        }
+        
+        const cards = cardIds.map(id => ZombicideCards.cards.find(c => c.id == id)).filter(Boolean);
+        if (cards.length > 0) {
+            cardInfo.innerHTML = createMultiCardDisplay(cards);
+            spawnPointElement.dataset.cardIds = JSON.stringify(cardIds);
+            updateZombieDisplayFromCards(spawnPointElement, cards);
+        } else {
+            // Fallback to random card if specific cards not found
+            assignRandomCards(spawnPointElement, 1);
+        }
+    }
+
+    // Function to assign a specific card by ID to a spawn point (legacy support)
+    function assignSpecificCard(spawnPointElement, cardId) {
+        assignSpecificCards(spawnPointElement, [cardId]);
+    }
+    
+    // Function to assign random cards to a spawn point
+    function assignRandomCards(spawnPointElement, numCards = 1) {
+        const cardInfo = spawnPointElement.querySelector('.card-info');
+        
+        if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
+            cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
+            return [];
         }
 
         // Use the selected hero level and Wolfz setting
@@ -361,22 +422,165 @@ document.addEventListener('DOMContentLoaded', async function() {
         const availableCards = getAvailableCards(level);
 
         if (availableCards.length > 0) {
-            // Get random card from available cards
-            const randomIndex = Math.floor(Math.random() * availableCards.length);
-            const card = availableCards[randomIndex];
+            const drawnCards = [];
+            for (let i = 0; i < numCards; i++) {
+                // Get random card from available cards
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                const card = availableCards[randomIndex];
+                drawnCards.push(card);
+            }
             
-            cardInfo.innerHTML = createCardDisplay(card);
-            // Store card data on the element for future reference
-            spawnPointElement.dataset.cardId = card.id;
+            cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
+            // Store card IDs on the element for future reference
+            spawnPointElement.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
             
-            // Update zombie display to match the card
-            updateZombieDisplay(spawnPointElement, card);
+            // Update zombie display to match the cards
+            updateZombieDisplayFromCards(spawnPointElement, drawnCards);
             
-            // Save session after assigning card
+            // Save session after assigning cards
             setTimeout(() => saveSession(), 100);
+            
+            return drawnCards;
         } else {
             cardInfo.innerHTML = '<div class="card-loading">No cards available for current settings</div>';
+            return [];
         }
+    }
+
+    // Function to assign a random card to a spawn point (legacy support)
+    function assignRandomCard(spawnPointElement) {
+        return assignRandomCards(spawnPointElement, 1);
+    }
+
+    // Function to process Double Spawn chains across all spawn points
+    function processDoubleSpawnChains() {
+        const spawnPoints = Array.from(document.querySelectorAll('.spawn-point'));
+        if (spawnPoints.length === 0) return;
+
+        // Clear any existing Double Spawn effects
+        spawnPoints.forEach(sp => {
+            sp.classList.remove('double-spawn-source', 'double-spawn-target', 'double-spawn-nothing');
+            const statusDiv = sp.querySelector('.spawn-status');
+            if (statusDiv) statusDiv.remove();
+        });
+
+        // Process each spawn point for Double Spawn effects
+        let chainProcessing = true;
+        let maxIterations = spawnPoints.length * 3; // Prevent infinite loops
+        
+        while (chainProcessing && maxIterations > 0) {
+            chainProcessing = false;
+            maxIterations--;
+
+            for (let i = 0; i < spawnPoints.length; i++) {
+                const spawnPoint = spawnPoints[i];
+                
+                // Skip if this spawn point already processed or affected by Double Spawn
+                if (spawnPoint.classList.contains('double-spawn-nothing') || 
+                    spawnPoint.classList.contains('double-spawn-source')) {
+                    continue;
+                }
+
+                // Get cards for this spawn point
+                const cardIds = spawnPoint.dataset.cardIds ? JSON.parse(spawnPoint.dataset.cardIds) : [];
+                const cards = cardIds.map(id => ZombicideCards.cards.find(c => c.id == id)).filter(Boolean);
+                
+                // Check if any card is a Double Spawn
+                const hasDoubleSpawn = cards.some(card => card.doubleSpawn);
+                
+                if (hasDoubleSpawn) {
+                    // Mark this spawn point as spawning nothing due to Double Spawn
+                    spawnPoint.classList.add('double-spawn-source');
+                    addSpawnStatus(spawnPoint, 'Nothing spawns (Double Spawn)', 'double-spawn-nothing');
+                    
+                    // Clear zombie display since nothing spawns
+                    const zombieMob = spawnPoint.querySelector('.zombie-mob');
+                    if (zombieMob) {
+                        zombieMob.innerHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
+                    }
+                    
+                    // Find next spawn point (wrapping around)
+                    const nextIndex = (i + 1) % spawnPoints.length;
+                    const nextSpawnPoint = spawnPoints[nextIndex];
+                    
+                    // Make the next spawn point draw two cards
+                    drawTwoCardsForDoubleSpawn(nextSpawnPoint);
+                    nextSpawnPoint.classList.add('double-spawn-target');
+                    
+                    chainProcessing = true;
+                    break; // Process one Double Spawn at a time
+                }
+            }
+        }
+    }
+
+    // Function to draw two cards for a spawn point due to Double Spawn
+    function drawTwoCardsForDoubleSpawn(spawnPoint) {
+        const level = getCurrentHeroLevel();
+        const availableCards = getAvailableCards(level);
+        
+        if (availableCards.length === 0) {
+            addSpawnStatus(spawnPoint, 'No cards available', 'error');
+            return;
+        }
+
+        // Draw exactly two random cards
+        const drawnCards = [];
+        for (let i = 0; i < 2; i++) {
+            const randomIndex = Math.floor(Math.random() * availableCards.length);
+            drawnCards.push(availableCards[randomIndex]);
+        }
+
+        // Check if any of the drawn cards is a Double Spawn
+        const hasDoubleSpawn = drawnCards.some(card => card.doubleSpawn);
+
+        if (hasDoubleSpawn) {
+            // If any card is Double Spawn, this spawn point also spawns nothing
+            // Store the cards for the next chain iteration
+            spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
+            
+            // Update display to show the Double Spawn cards but indicate nothing spawns
+            const cardInfo = spawnPoint.querySelector('.card-info');
+            cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
+            
+            addSpawnStatus(spawnPoint, 'Nothing spawns (Chain continues)', 'double-spawn-nothing');
+            
+            // Clear zombie display since nothing spawns
+            const zombieMob = spawnPoint.querySelector('.zombie-mob');
+            if (zombieMob) {
+                zombieMob.innerHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
+            }
+        } else {
+            // Neither card is Double Spawn - both cards resolve normally
+            spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
+            
+            // Update display with both cards
+            const cardInfo = spawnPoint.querySelector('.card-info');
+            cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
+            
+            // Update zombie display with aggregated zombies from both cards
+            updateZombieDisplayFromCards(spawnPoint, drawnCards);
+            
+            // Show status indicating this spawn point drew 2 cards and resolved
+            const cardNumbers = drawnCards.map(c => `#${c.id}`).join(', ');
+            addSpawnStatus(spawnPoint, `Drew 2 cards: ${cardNumbers}`, 'double-spawn-resolved');
+        }
+    }
+
+    // Function to add status information to a spawn point
+    function addSpawnStatus(spawnPoint, message, className = '') {
+        // Remove existing status
+        const existingStatus = spawnPoint.querySelector('.spawn-status');
+        if (existingStatus) existingStatus.remove();
+        
+        // Add new status
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `spawn-status ${className}`;
+        statusDiv.textContent = message;
+        
+        // Insert after the title
+        const title = spawnPoint.querySelector('.spawn-title');
+        title.parentNode.insertBefore(statusDiv, title.nextSibling);
     }
 
     // Function to refresh all spawn point cards when level changes
@@ -387,6 +591,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
             setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 300 + 100);
         });
+    }
+
+    // Function to spawn all cards with Double Spawn rules
+    function spawnAllWithDoubleSpawnRules() {
+        const spawnPoints = document.querySelectorAll('.spawn-point');
+        
+        // First, assign random cards to all spawn points
+        spawnPoints.forEach(spawnPoint => {
+            const cardInfo = spawnPoint.querySelector('.card-info');
+            cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
+            assignRandomCard(spawnPoint);
+        });
+
+        // After a short delay to ensure cards are assigned, process Double Spawn chains
+        setTimeout(() => {
+            processDoubleSpawnChains();
+            saveSession();
+        }, 500);
     }
 
     function addSpawnPoint(title = null, cardId = null) {
@@ -518,8 +740,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Add event listener for spawn all button
     document.getElementById('spawn-all-btn').addEventListener('click', function() {
-        console.log('Spawning new cards for all spawn points');
-        refreshAllCards();
+        console.log('Spawning new cards for all spawn points with Double Spawn rules');
+        spawnAllWithDoubleSpawnRules();
     });
     
     // Add event listener for reset session button
@@ -542,6 +764,72 @@ document.addEventListener('DOMContentLoaded', async function() {
         refreshAllCards();
         saveSession();
     });
+
+    // Function to test Double Spawn scenarios
+    function testDoubleSpawnScenario() {
+        const spawnPoints = document.querySelectorAll('.spawn-point');
+        if (spawnPoints.length < 3) {
+            alert('Need at least 3 spawn points to test Double Spawn scenarios');
+            return;
+        }
+
+        // Get Double Spawn cards from the current level
+        const level = getCurrentHeroLevel();
+        const availableCards = getAvailableCards(level);
+        const doubleSpawnCards = availableCards.filter(card => card.doubleSpawn);
+
+        if (doubleSpawnCards.length === 0) {
+            alert('No Double Spawn cards available for the current level and expansion settings');
+            return;
+        }
+
+        // Test scenario: Assign a Double Spawn card to the first spawn point
+        console.log('Testing Double Spawn scenario...');
+        const firstSpawnPoint = spawnPoints[0];
+        const doubleSpawnCard = doubleSpawnCards[Math.floor(Math.random() * doubleSpawnCards.length)];
+        
+        // Assign the Double Spawn card to first spawn point (single card)
+        assignSpecificCards(firstSpawnPoint, [doubleSpawnCard.id]);
+
+        // Assign single random cards to other spawn points
+        for (let i = 1; i < spawnPoints.length; i++) {
+            assignRandomCards(spawnPoints[i], 1);
+        }
+
+        // Process Double Spawn chains after cards are assigned
+        setTimeout(() => {
+            processDoubleSpawnChains();
+            saveSession();
+        }, 500);
+    }
+
+    // Add test button functionality (if running in development)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Create and add test button for local development
+        const testButton = document.createElement('button');
+        testButton.textContent = 'Test Double Spawn';
+        testButton.className = 'spawn-btn';
+        testButton.style.marginLeft = '10px';
+        testButton.addEventListener('click', testDoubleSpawnScenario);
+        
+        const testMultiButton = document.createElement('button');
+        testMultiButton.textContent = 'Test 2 Cards';
+        testMultiButton.className = 'spawn-btn';
+        testMultiButton.style.marginLeft = '10px';
+        testMultiButton.addEventListener('click', function() {
+            const spawnPoints = document.querySelectorAll('.spawn-point');
+            spawnPoints.forEach(sp => {
+                assignRandomCards(sp, 2);
+            });
+            setTimeout(() => saveSession(), 500);
+        });
+        
+        const spawnControl = document.querySelector('.spawn-control');
+        if (spawnControl) {
+            spawnControl.appendChild(testButton);
+            spawnControl.appendChild(testMultiButton);
+        }
+    }
     
     setupAllDragAndDrop();
     
@@ -583,10 +871,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 setupDragAndDrop(newElement);
                 
-                // Restore the specific card when cards are loaded
+                // Restore the specific cards when cards are loaded
                 if (cardsLoaded) {
                     setTimeout(() => {
-                        if (spData.cardId) {
+                        // Try new cardIds format first, fallback to legacy cardId
+                        if (spData.cardIds && spData.cardIds.length > 0) {
+                            assignSpecificCards(newElement, spData.cardIds);
+                        } else if (spData.cardId) {
                             assignSpecificCard(newElement, spData.cardId);
                         } else {
                             assignRandomCard(newElement);
@@ -597,7 +888,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const waitForCards = setInterval(() => {
                         if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
                             clearInterval(waitForCards);
-                            if (spData.cardId) {
+                            // Try new cardIds format first, fallback to legacy cardId
+                            if (spData.cardIds && spData.cardIds.length > 0) {
+                                assignSpecificCards(newElement, spData.cardIds);
+                            } else if (spData.cardId) {
                                 assignSpecificCard(newElement, spData.cardId);
                             } else {
                                 assignRandomCard(newElement);
