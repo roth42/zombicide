@@ -1,9 +1,17 @@
 // Session management
 const SESSION_KEY = 'zombicide-session';
 const HISTORY_KEY = 'zombicide-history';
+const DECK_STATE_KEY = 'zombicide-deck-state';
 
 // History management
 let spawnHistory = [];
+
+// Deck state management - tracks drawn cards to prevent duplicates
+let deckState = {
+    drawnCards: new Set(),
+    currentLevel: null,
+    currentWolfzSetting: null
+};
 
 function saveSession() {
     const spawnPoints = Array.from(document.querySelectorAll('.spawn-point')).map(sp => ({
@@ -37,6 +45,7 @@ function loadSession() {
 function resetSession() {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem(DECK_STATE_KEY);
     location.reload();
 }
 
@@ -439,17 +448,73 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Filter by expansion based on Wolfz setting
         if (isWolfzEnabled()) {
             // Include base game and wolfz expansion cards
-            availableCards = availableCards.filter(card => 
+            availableCards = availableCards.filter(card =>
                 card.expansion === 'base' || card.expansion === 'wolfz'
             );
         } else {
             // Include only base game cards
-            availableCards = availableCards.filter(card => 
+            availableCards = availableCards.filter(card =>
                 card.expansion === 'base'
             );
         }
 
         return availableCards;
+    }
+
+    // Deck state management functions
+    function saveDeckState() {
+        const deckStateData = {
+            drawnCards: Array.from(deckState.drawnCards),
+            currentLevel: deckState.currentLevel,
+            currentWolfzSetting: deckState.currentWolfzSetting
+        };
+        localStorage.setItem(DECK_STATE_KEY, JSON.stringify(deckStateData));
+    }
+
+    function loadDeckState() {
+        const saved = localStorage.getItem(DECK_STATE_KEY);
+        if (!saved) return null;
+
+        try {
+            const data = JSON.parse(saved);
+            return {
+                drawnCards: new Set(data.drawnCards || []),
+                currentLevel: data.currentLevel,
+                currentWolfzSetting: data.currentWolfzSetting
+            };
+        } catch (error) {
+            console.warn('Failed to parse saved deck state:', error);
+            return null;
+        }
+    }
+
+    function resetDeckState() {
+        deckState.drawnCards.clear();
+        deckState.currentLevel = getCurrentHeroLevel();
+        deckState.currentWolfzSetting = isWolfzEnabled();
+        saveDeckState();
+        console.log('Deck shuffled - all cards available again');
+    }
+
+    function checkAndResetDeckIfNeeded() {
+        const currentLevel = getCurrentHeroLevel();
+        const currentWolfzSetting = isWolfzEnabled();
+
+        // Reset deck if settings changed
+        if (deckState.currentLevel !== currentLevel || deckState.currentWolfzSetting !== currentWolfzSetting) {
+            console.log('Settings changed, resetting deck');
+            resetDeckState();
+            return;
+        }
+
+        // Check if deck is exhausted
+        const availableCards = getAvailableCards(currentLevel);
+        const undrawnCards = availableCards.filter(card => !deckState.drawnCards.has(card.id));
+
+        if (undrawnCards.length === 0) {
+            console.log('Deck exhausted, shuffling');
+            resetDeckState();
+        }
     }
 
     
@@ -483,6 +548,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         assignSpecificCards(spawnPointElement, [cardId]);
     }
     
+    // Function to draw cards from the undrawn deck
+    function drawCardsFromDeck(numCards = 1) {
+        checkAndResetDeckIfNeeded();
+
+        const level = getCurrentHeroLevel();
+        const availableCards = getAvailableCards(level);
+        const undrawnCards = availableCards.filter(card => !deckState.drawnCards.has(card.id));
+
+        if (undrawnCards.length === 0) {
+            console.warn('No undrawn cards available, this should not happen after checkAndResetDeckIfNeeded');
+            return [];
+        }
+
+        const drawnCards = [];
+        for (let i = 0; i < numCards && undrawnCards.length > 0; i++) {
+            const randomIndex = Math.floor(Math.random() * undrawnCards.length);
+            const card = undrawnCards[randomIndex];
+            drawnCards.push(card);
+
+            // Mark card as drawn and remove from undrawn list
+            deckState.drawnCards.add(card.id);
+            undrawnCards.splice(randomIndex, 1);
+        }
+
+        saveDeckState();
+        return drawnCards;
+    }
+
     // Function to assign random cards to a spawn point
     function assignRandomCards(spawnPointElement, numCards = 1, addToHistoryFlag = false) {
         const cardInfo = spawnPointElement.querySelector('.card-info');
@@ -492,19 +585,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             return [];
         }
 
-        // Use the selected hero level and Wolfz setting
-        const level = getCurrentHeroLevel();
-        const availableCards = getAvailableCards(level);
+        const drawnCards = drawCardsFromDeck(numCards);
 
-        if (availableCards.length > 0) {
-            const drawnCards = [];
-            for (let i = 0; i < numCards; i++) {
-                // Get random card from available cards
-                const randomIndex = Math.floor(Math.random() * availableCards.length);
-                const card = availableCards[randomIndex];
-                drawnCards.push(card);
-            }
-
+        if (drawnCards.length > 0) {
             cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
             // Store card IDs on the element for future reference
             spawnPointElement.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
@@ -588,18 +671,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to draw cards for a spawn point due to Double Spawn
     function drawCardsForDoubleSpawn(spawnPoint, numCards) {
-        const level = getCurrentHeroLevel();
-        const availableCards = getAvailableCards(level);
+        const drawnCards = drawCardsFromDeck(numCards);
 
-        if (availableCards.length === 0) {
+        if (drawnCards.length === 0) {
             return;
-        }
-
-        // Draw the specified number of random cards
-        const drawnCards = [];
-        for (let i = 0; i < numCards; i++) {
-            const randomIndex = Math.floor(Math.random() * availableCards.length);
-            drawnCards.push(availableCards[randomIndex]);
         }
 
         // Store the cards and update display
@@ -624,6 +699,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Clear stored card IDs
             spawnPoint.dataset.cardIds = '';
         });
+        // Reset deck state when settings change
+        resetDeckState();
     }
 
     // Function to spawn all cards with Double Spawn rules
@@ -831,6 +908,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const randomSpawnPoint = spawnPoints[randomSpawnIndex];
         const doubleSpawnCard = doubleSpawnCards[Math.floor(Math.random() * doubleSpawnCards.length)];
 
+        // Mark the Double Spawn card as drawn to prevent it from being drawn again
+        deckState.drawnCards.add(doubleSpawnCard.id);
+        saveDeckState();
+
         // Assign the Double Spawn card to random spawn point (single card)
         assignSpecificCards(randomSpawnPoint, [doubleSpawnCard.id]);
 
@@ -952,6 +1033,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load and initialize history
     spawnHistory = loadHistory();
     updateHistoryDisplay();
+
+    // Load and initialize deck state
+    const savedDeckState = loadDeckState();
+    if (savedDeckState) {
+        deckState = savedDeckState;
+    } else {
+        // Initialize new deck state
+        resetDeckState();
+    }
 
     console.log('Zombicide project initialized successfully!');
 });
