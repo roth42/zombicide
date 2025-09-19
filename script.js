@@ -69,9 +69,9 @@ function addToHistory(spawnPointTitle, cards, timestamp = null) {
 
     spawnHistory.unshift(entry); // Add to beginning
 
-    // Keep only last 50 entries
-    if (spawnHistory.length > 50) {
-        spawnHistory = spawnHistory.slice(0, 50);
+    // Keep only last 500 entries
+    if (spawnHistory.length > 500) {
+        spawnHistory = spawnHistory.slice(0, 500);
     }
 
     saveHistory();
