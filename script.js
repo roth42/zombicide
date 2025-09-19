@@ -426,13 +426,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
 
-    // Function to refresh all spawn point cards when level changes
-    function refreshAllCards() {
+    // Function to clear all spawn point cards when level changes
+    function clearAllCards() {
         const spawnPoints = document.querySelectorAll('.spawn-point');
         spawnPoints.forEach(spawnPoint => {
             const cardInfo = spawnPoint.querySelector('.card-info');
-            cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
-            setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 300 + 100);
+            cardInfo.innerHTML = '<div class="card-loading">Ready to spawn cards</div>';
+            // Clear stored card IDs
+            spawnPoint.dataset.cardIds = '';
         });
     }
 
@@ -470,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <button class="remove-spawn-btn" onclick="removeSpawnPoint('${newSpawnId}')">×</button>
                 <h3 class="spawn-title" onclick="editTitle(this)" data-original="${spawnTitle}">${spawnTitle}</h3>
                 <div class="card-info">
-                    <div class="card-loading">Drawing card...</div>
+                    <div class="card-loading">Ready to spawn cards</div>
                 </div>
             </div>
         `;
@@ -480,12 +481,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         setupDragAndDrop(newElement);
         
-        // Assign a card to the new spawn point (either saved or random)
+        // Set initial state for new spawn point
         setTimeout(() => {
             if (cardId) {
                 assignSpecificCard(newElement, cardId);
             } else {
-                assignRandomCard(newElement);
+                const cardInfo = newElement.querySelector('.card-info');
+                if (cardInfo) {
+                    cardInfo.innerHTML = '<div class="card-loading">Ready to spawn cards</div>';
+                }
             }
         }, 100);
         
@@ -596,14 +600,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add event listener for hero level changes
     document.getElementById('hero-level').addEventListener('change', function() {
         console.log('Hero level changed to:', this.value);
-        refreshAllCards();
+        clearAllCards();
         saveSession();
     });
 
     // Add event listener for Wolfz toggle changes
     document.getElementById('wolfz-enabled').addEventListener('change', function() {
         console.log('Wolfz expansion', this.checked ? 'enabled' : 'disabled');
-        refreshAllCards();
+        clearAllCards();
         saveSession();
     });
 
@@ -744,16 +748,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     function initializeDefaultSpawnPoints() {
         const existingSpawnPoints = document.querySelectorAll('.spawn-point');
         existingSpawnPoints.forEach(spawnPoint => {
-            if (cardsLoaded) {
-                setTimeout(() => assignRandomCard(spawnPoint), Math.random() * 500 + 100);
-            } else {
-                // Wait for cards to load
-                const waitForCards = setInterval(() => {
-                    if (ZombicideCards.cards && ZombicideCards.cards.length > 0) {
-                        clearInterval(waitForCards);
-                        assignRandomCard(spawnPoint);
-                    }
-                }, 100);
+            const cardInfo = spawnPoint.querySelector('.card-info');
+            if (cardInfo) {
+                cardInfo.innerHTML = '<div class="card-loading">Ready to spawn cards</div>';
             }
         });
     }
