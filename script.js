@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             case 'walkers':
                 return '🧟';
             case 'fatties':
-                return '🧟‍♂️';
+                return '💪';
             case 'runners':
                 return '🏃‍♀️';
             case 'abomination':
@@ -304,6 +304,106 @@ document.addEventListener('DOMContentLoaded', async function() {
             default:
                 return '🔄';
         }
+    }
+
+    // Function to calculate and generate summary icons for cards
+    function generateCardSummary(cards) {
+        if (!cards || cards.length === 0) {
+            return '';
+        }
+
+        const summary = {
+            walker: 0,
+            fatty: 0,
+            runner: 0,
+            abomination: 0,
+            wolfz: 0,
+            wolfbomination: 0,
+            deadeyeWalkers: 0,
+            murderOfCrowz: 0,
+            necromancer: 0,
+            nothing: 0,
+            doubleSpawn: 0,
+            extraActivation: 0
+        };
+
+        // Count all zombie types and special effects across all cards
+        cards.forEach(card => {
+            summary.walker += card.walker || 0;
+            summary.fatty += card.fatty || 0;
+            summary.runner += card.runner || 0;
+            summary.abomination += card.abomination || 0;
+            summary.wolfz += card.wolfz || 0;
+            summary.wolfbomination += card.wolfbomination || 0;
+            summary.deadeyeWalkers += card.deadeyeWalkers || 0;
+            summary.murderOfCrowz += card.murderOfCrowz || 0;
+            summary.necromancer += card.necromancer || 0;
+            summary.nothing += card.nothing || 0;
+
+            if (card.doubleSpawn) {
+                summary.doubleSpawn += 1;
+            }
+            if (card.extraActivation) {
+                summary.extraActivation += 1;
+            }
+        });
+
+        // Generate icon string
+        let iconString = '';
+        const zombieTypes = ZombicideCards.metadata.zombieTypes;
+
+        // Add zombie type icons
+        zombieTypes.forEach(type => {
+            let count = 0;
+            switch (type.name) {
+                case 'Walker':
+                    count = summary.walker;
+                    break;
+                case 'Fatty':
+                    count = summary.fatty;
+                    break;
+                case 'Runner':
+                    count = summary.runner;
+                    break;
+                case 'Abomination':
+                    count = summary.abomination;
+                    break;
+                case 'Wolfz':
+                    count = summary.wolfz;
+                    break;
+                case 'Wolfbomination':
+                    count = summary.wolfbomination;
+                    break;
+                case 'Deadeye Walkers':
+                    count = summary.deadeyeWalkers;
+                    break;
+                case 'Murder of Crowz':
+                    count = summary.murderOfCrowz;
+                    break;
+                case 'Necromancer':
+                    count = summary.necromancer;
+                    break;
+            }
+
+            if (count > 0) {
+                iconString += type.emoji.repeat(count);
+            }
+        });
+
+        // Add nothing icons
+        if (summary.nothing > 0) {
+            iconString += '❌'.repeat(summary.nothing);
+        }
+
+        // Add special effect icons
+        if (summary.doubleSpawn > 0) {
+            iconString += '⚡'.repeat(summary.doubleSpawn);
+        }
+        if (summary.extraActivation > 0) {
+            iconString += '🔄'.repeat(summary.extraActivation);
+        }
+
+        return iconString;
     }
 
     // Function to create card display HTML
@@ -401,8 +501,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             return '<div class="card-loading">No cards drawn</div>';
         }
 
+        // Generate summary icons
+        const summaryIcons = generateCardSummary(cards);
+
         if (cards.length === 1) {
-            return createCardDisplay(cards[0]);
+            const cardHTML = createCardDisplay(cards[0]);
+            return `
+                <div class="spawn-summary">${summaryIcons}</div>
+                ${cardHTML}
+            `;
         }
 
         // Multiple cards - show each card with full details stacked vertically
@@ -413,6 +520,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
         return `
+            <div class="spawn-summary">${summaryIcons}</div>
             <div class="multi-card-display">
                 ${cardsHTML}
             </div>

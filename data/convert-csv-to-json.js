@@ -79,7 +79,7 @@ const zombicideData = {
         ],
         zombieTypes: [
             { name: "Walker", emoji: "🧟", description: "Basic zombie", expansion: "base" },
-            { name: "Fatty", emoji: "🧟‍♂️", description: "Armored zombie", expansion: "base" },
+            { name: "Fatty", emoji: "💪", description: "Armored zombie", expansion: "base" },
             { name: "Runner", emoji: "🏃‍♀️", description: "Fast zombie", expansion: "base" },
             { name: "Abomination", emoji: "👹", description: "Boss zombie", expansion: "base" },
             { name: "Wolfz", emoji: "🐺", description: "Wolf zombie", expansion: "wolfz" },

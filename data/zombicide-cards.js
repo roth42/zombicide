@@ -78,7 +78,7 @@ const ZombicideCards = {
     ],
     zombieTypes: [
       { name: "Walker", emoji: "🧟", description: "Basic zombie" },
-      { name: "Fatty", emoji: "🧟‍♂️", description: "Armored zombie" },
+      { name: "Fatty", emoji: "💪", description: "Armored zombie" },
       { name: "Runner", emoji: "🏃‍♀️", description: "Fast zombie" },
       { name: "Abomination", emoji: "👹", description: "Boss zombie" },
       { name: "Wolfz", emoji: "🐺", description: "Wolf zombie" },
