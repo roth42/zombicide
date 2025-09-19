@@ -474,11 +474,11 @@ section p {
 
 /* Multi-card display styles */
 .multi-card-display {
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 8px;
-    padding: 0.75rem;
-    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
+
 
 .multi-card-header {
     text-align: center;
@@ -608,12 +608,8 @@ section p {
 
 .card-info {
     margin-top: 1rem;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
-    padding: 0.75rem;
     position: relative;
     z-index: 2;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .card-loading {
@@ -627,6 +623,10 @@ section p {
     color: #fff;
     font-size: 0.85rem;
     line-height: 1.4;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .card-header {

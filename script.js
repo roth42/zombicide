@@ -223,33 +223,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             return createCardDisplay(cards[0]);
         }
 
-        // Multiple cards - create a compact summary view
-        const cardCount = cards.length;
+        // Multiple cards - show each card with full details stacked vertically
         let cardsHTML = '';
 
-        cards.forEach((card, index) => {
-            const levelClass = card.levelName.toLowerCase();
-            cardsHTML += `
-                <div class="mini-card">
-                    <div class="mini-card-header">
-                        <span class="card-id">Card #${card.id}</span>
-                        <span class="card-level ${levelClass}">${card.levelName}</span>
-                    </div>
-                    ${card.doubleSpawn ? '<div class="mini-special">⚡ Double Spawn</div>' : ''}
-                    ${card.extraActivation ? '<div class="mini-special">🔄 Extra Activation</div>' : ''}
-                    ${card.nothing > 0 ? '<div class="mini-special">❌ Nothing</div>' : ''}
-                </div>
-            `;
+        cards.forEach((card) => {
+            cardsHTML += createCardDisplay(card);
         });
 
         return `
             <div class="multi-card-display">
-                <div class="multi-card-header">
-                    <span class="card-count">${cardCount} Cards Drawn</span>
-                </div>
-                <div class="mini-cards-container">
-                    ${cardsHTML}
-                </div>
+                ${cardsHTML}
             </div>
         `;
     }
@@ -296,92 +279,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         return availableCards;
     }
 
-    // Function to update zombie display based on multiple cards
-    function updateZombieDisplayFromCards(spawnPointElement, cards) {
-        const zombieMob = spawnPointElement.querySelector('.zombie-mob');
-        if (!zombieMob || !cards || cards.length === 0) return;
-        
-        // Aggregate all zombies from all cards
-        const zombieTotals = {
-            walker: 0,
-            fatty: 0,
-            runner: 0,
-            abomination: 0,
-            wolfz: 0,
-            wolfbomination: 0,
-            necromancer: 0,
-            deadeyeWalkers: 0,
-            murderOfCrowz: 0,
-            npc: 0,
-            nothing: 0
-        };
-
-        // Sum up zombies from all cards
-        cards.forEach(card => {
-            zombieTotals.walker += card.walker || 0;
-            zombieTotals.fatty += card.fatty || 0;
-            zombieTotals.runner += card.runner || 0;
-            zombieTotals.abomination += card.abomination || 0;
-            zombieTotals.wolfz += card.wolfz || 0;
-            zombieTotals.wolfbomination += card.wolfbomination || 0;
-            zombieTotals.necromancer += card.necromancer || 0;
-            zombieTotals.deadeyeWalkers += card.deadeyeWalkers || 0;
-            zombieTotals.murderOfCrowz += card.murderOfCrowz || 0;
-            zombieTotals.npc += card.npc || 0;
-            zombieTotals.nothing += card.nothing || 0;
-        });
-        
-        let zombieHTML = '';
-        
-        // Show aggregated zombies
-        for (let i = 0; i < zombieTotals.walker; i++) {
-            zombieHTML += '<div class="zombie" title="Walker">🧟</div>';
-        }
-        for (let i = 0; i < zombieTotals.fatty; i++) {
-            zombieHTML += '<div class="zombie" title="Fatty">🧟‍♂️</div>';
-        }
-        for (let i = 0; i < zombieTotals.runner; i++) {
-            zombieHTML += '<div class="zombie" title="Runner">🏃‍♀️</div>';
-        }
-        for (let i = 0; i < zombieTotals.abomination; i++) {
-            zombieHTML += '<div class="zombie" title="Abomination">👹</div>';
-        }
-        for (let i = 0; i < zombieTotals.wolfz; i++) {
-            zombieHTML += '<div class="zombie" title="Wolfz">🐺</div>';
-        }
-        for (let i = 0; i < zombieTotals.wolfbomination; i++) {
-            zombieHTML += '<div class="zombie" title="Wolfbomination">🐺👹</div>';
-        }
-        for (let i = 0; i < zombieTotals.necromancer; i++) {
-            zombieHTML += '<div class="zombie" title="Necromancer">🧙‍♂️</div>';
-        }
-        for (let i = 0; i < zombieTotals.deadeyeWalkers; i++) {
-            zombieHTML += '<div class="zombie" title="Deadeye Walkers">🎯🧟</div>';
-        }
-        for (let i = 0; i < zombieTotals.murderOfCrowz; i++) {
-            zombieHTML += '<div class="zombie" title="Murder of Crowz">🐦‍⬛</div>';
-        }
-        for (let i = 0; i < zombieTotals.npc; i++) {
-            zombieHTML += '<div class="zombie" title="NPC">👤</div>';
-        }
-        
-        // Handle nothing cards - if any card is a "nothing" card
-        if (zombieTotals.nothing > 0) {
-            zombieHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
-        }
-        
-        // If no zombies, show empty state
-        if (!zombieHTML) {
-            zombieHTML = '<div class="zombie" title="No zombies">⭕</div>';
-        }
-        
-        zombieMob.innerHTML = zombieHTML;
-    }
-
-    // Function to update zombie display based on card data (legacy support)
-    function updateZombieDisplay(spawnPointElement, card) {
-        updateZombieDisplayFromCards(spawnPointElement, [card]);
-    }
     
     // Function to assign specific cards by IDs to a spawn point
     function assignSpecificCards(spawnPointElement, cardIds) {
@@ -396,7 +293,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (cards.length > 0) {
             cardInfo.innerHTML = createMultiCardDisplay(cards);
             spawnPointElement.dataset.cardIds = JSON.stringify(cardIds);
-            updateZombieDisplayFromCards(spawnPointElement, cards);
         } else {
             // Fallback to random card if specific cards not found
             assignRandomCards(spawnPointElement, 1);
@@ -434,9 +330,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Store card IDs on the element for future reference
             spawnPointElement.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
             
-            // Update zombie display to match the cards
-            updateZombieDisplayFromCards(spawnPointElement, drawnCards);
-            
             // Save session after assigning cards
             setTimeout(() => saveSession(), 100);
             
@@ -460,8 +353,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Clear any existing Double Spawn effects
         spawnPoints.forEach(sp => {
             sp.classList.remove('double-spawn-source', 'double-spawn-target', 'double-spawn-nothing');
-            const statusDiv = sp.querySelector('.spawn-status');
-            if (statusDiv) statusDiv.remove();
         });
 
         // Process each spawn point for Double Spawn effects
@@ -491,13 +382,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (hasDoubleSpawn) {
                     // Mark this spawn point as spawning nothing due to Double Spawn
                     spawnPoint.classList.add('double-spawn-source');
-                    addSpawnStatus(spawnPoint, 'Nothing spawns (Double Spawn)', 'double-spawn-nothing');
-                    
-                    // Clear zombie display since nothing spawns
-                    const zombieMob = spawnPoint.querySelector('.zombie-mob');
-                    if (zombieMob) {
-                        zombieMob.innerHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
-                    }
                     
                     // Find next spawn point (wrapping around)
                     const nextIndex = (i + 1) % spawnPoints.length;
@@ -520,7 +404,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const availableCards = getAvailableCards(level);
         
         if (availableCards.length === 0) {
-            addSpawnStatus(spawnPoint, 'No cards available', 'error');
             return;
         }
 
@@ -534,54 +417,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Check if any of the drawn cards is a Double Spawn
         const hasDoubleSpawn = drawnCards.some(card => card.doubleSpawn);
 
-        if (hasDoubleSpawn) {
-            // If any card is Double Spawn, this spawn point also spawns nothing
-            // Store the cards for the next chain iteration
-            spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
-            
-            // Update display to show the Double Spawn cards but indicate nothing spawns
-            const cardInfo = spawnPoint.querySelector('.card-info');
-            cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
-            
-            addSpawnStatus(spawnPoint, 'Nothing spawns (Chain continues)', 'double-spawn-nothing');
-            
-            // Clear zombie display since nothing spawns
-            const zombieMob = spawnPoint.querySelector('.zombie-mob');
-            if (zombieMob) {
-                zombieMob.innerHTML = '<div class="zombie" title="Nothing spawns">❌</div>';
-            }
-        } else {
-            // Neither card is Double Spawn - both cards resolve normally
-            spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
-            
-            // Update display with both cards
-            const cardInfo = spawnPoint.querySelector('.card-info');
-            cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
-            
-            // Update zombie display with aggregated zombies from both cards
-            updateZombieDisplayFromCards(spawnPoint, drawnCards);
-            
-            // Show status indicating this spawn point drew 2 cards and resolved
-            const cardNumbers = drawnCards.map(c => `#${c.id}`).join(', ');
-            addSpawnStatus(spawnPoint, `Drew 2 cards: ${cardNumbers}`, 'double-spawn-resolved');
-        }
+        // Store the cards and update display regardless of Double Spawn status
+        spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
+
+        // Update display with both cards
+        const cardInfo = spawnPoint.querySelector('.card-info');
+        cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
     }
 
-    // Function to add status information to a spawn point
-    function addSpawnStatus(spawnPoint, message, className = '') {
-        // Remove existing status
-        const existingStatus = spawnPoint.querySelector('.spawn-status');
-        if (existingStatus) existingStatus.remove();
-        
-        // Add new status
-        const statusDiv = document.createElement('div');
-        statusDiv.className = `spawn-status ${className}`;
-        statusDiv.textContent = message;
-        
-        // Insert after the title
-        const title = spawnPoint.querySelector('.spawn-title');
-        title.parentNode.insertBefore(statusDiv, title.nextSibling);
-    }
 
     // Function to refresh all spawn point cards when level changes
     function refreshAllCards() {
@@ -624,9 +467,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="drag-handle">⋮⋮</div>
                 <button class="remove-spawn-btn" onclick="removeSpawnPoint('${newSpawnId}')">×</button>
                 <h3 class="spawn-title" onclick="editTitle(this)" data-original="${spawnTitle}">${spawnTitle}</h3>
-                <div class="zombie-mob">
-                    <div class="zombie" title="Loading...">⏳</div>
-                </div>
                 <div class="card-info">
                     <div class="card-loading">Drawing card...</div>
                 </div>
@@ -856,9 +696,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <div class="drag-handle">⋮⋮</div>
                         <button class="remove-spawn-btn" onclick="removeSpawnPoint('${spData.id}')">×</button>
                         <h3 class="spawn-title" onclick="editTitle(this)" data-original="${spData.title}">${spData.title}</h3>
-                        <div class="zombie-mob">
-                            <div class="zombie" title="Loading...">⏳</div>
-                        </div>
                         <div class="card-info">
                             <div class="card-loading">Loading saved card...</div>
                         </div>
