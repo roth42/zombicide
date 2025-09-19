@@ -1,5 +1,9 @@
 // Session management
 const SESSION_KEY = 'zombicide-session';
+const HISTORY_KEY = 'zombicide-history';
+
+// History management
+let spawnHistory = [];
 
 function saveSession() {
     const spawnPoints = Array.from(document.querySelectorAll('.spawn-point')).map(sp => ({
@@ -32,7 +36,113 @@ function loadSession() {
 
 function resetSession() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(HISTORY_KEY);
     location.reload();
+}
+
+// History management functions
+function saveHistory() {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(spawnHistory));
+}
+
+function loadHistory() {
+    const saved = localStorage.getItem(HISTORY_KEY);
+    if (!saved) return [];
+
+    try {
+        return JSON.parse(saved);
+    } catch (error) {
+        console.warn('Failed to parse saved history:', error);
+        return [];
+    }
+}
+
+function addToHistory(spawnPointTitle, cards, timestamp = null) {
+    const entry = {
+        id: Date.now() + Math.random(),
+        spawnPoint: spawnPointTitle,
+        cards: cards,
+        timestamp: timestamp || new Date().toISOString(),
+        heroLevel: getCurrentHeroLevel(),
+        wolfzEnabled: isWolfzEnabled()
+    };
+
+    spawnHistory.unshift(entry); // Add to beginning
+
+    // Keep only last 50 entries
+    if (spawnHistory.length > 50) {
+        spawnHistory = spawnHistory.slice(0, 50);
+    }
+
+    saveHistory();
+    updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+    const container = document.querySelector('.history-container');
+    if (!container) return;
+
+    if (spawnHistory.length === 0) {
+        container.innerHTML = '<div class="history-empty">No spawn history yet. Click \'Spawn\' to start tracking draws.</div>';
+        return;
+    }
+
+    const historyHTML = spawnHistory.map(entry => createHistoryEntryHTML(entry)).join('');
+    container.innerHTML = historyHTML;
+}
+
+function createHistoryEntryHTML(entry) {
+    // Create clickable card numbers
+    const cardNumbers = entry.cards.map(card =>
+        `<span class="card-number" onclick="toggleCardJson('${entry.id}', ${card.id})">#${card.id}</span>`
+    ).join(' ');
+
+    return `
+        <div class="history-entry" data-entry-id="${entry.id}">
+            <div class="history-line">
+                <span class="history-spawn-point">${entry.spawnPoint}</span>: ${cardNumbers}
+            </div>
+            <div class="card-json-panels">
+                ${entry.cards.map(card => createCardJsonPanel(entry.id, card)).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function createCardJsonPanel(entryId, card) {
+    return `
+        <div class="card-json-panel" id="json-${entryId}-${card.id}" style="display: none;">
+            <div class="card-json-header">
+                <span>Card #${card.id} JSON Data</span>
+                <button class="close-json" onclick="closeCardJson('${entryId}', ${card.id})">×</button>
+            </div>
+            <pre class="card-json-content">${JSON.stringify(card, null, 2)}</pre>
+        </div>
+    `;
+}
+
+
+function toggleCardJson(entryId, cardId) {
+    // Close all other open JSON panels first
+    const allPanels = document.querySelectorAll('.card-json-panel');
+    allPanels.forEach(panel => {
+        if (panel.id !== `json-${entryId}-${cardId}`) {
+            panel.style.display = 'none';
+        }
+    });
+
+    // Toggle the clicked panel
+    const panel = document.getElementById(`json-${entryId}-${cardId}`);
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function closeCardJson(entryId, cardId) {
+    const panel = document.getElementById(`json-${entryId}-${cardId}`);
+    if (panel) {
+        panel.style.display = 'none';
+    }
 }
 
 // Function to get current selected hero level
@@ -281,21 +391,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     
     // Function to assign specific cards by IDs to a spawn point
-    function assignSpecificCards(spawnPointElement, cardIds) {
+    function assignSpecificCards(spawnPointElement, cardIds, addToHistoryFlag = false) {
         const cardInfo = spawnPointElement.querySelector('.card-info');
-        
+
         if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
             cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
             return;
         }
-        
+
         const cards = cardIds.map(id => ZombicideCards.cards.find(c => c.id == id)).filter(Boolean);
         if (cards.length > 0) {
             cardInfo.innerHTML = createMultiCardDisplay(cards);
             spawnPointElement.dataset.cardIds = JSON.stringify(cardIds);
+
+            // Add to history if requested
+            if (addToHistoryFlag) {
+                const spawnPointTitle = spawnPointElement.querySelector('.spawn-title').textContent;
+                addToHistory(spawnPointTitle, cards);
+            }
         } else {
             // Fallback to random card if specific cards not found
-            assignRandomCards(spawnPointElement, 1);
+            assignRandomCards(spawnPointElement, 1, addToHistoryFlag);
         }
     }
 
@@ -305,9 +421,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Function to assign random cards to a spawn point
-    function assignRandomCards(spawnPointElement, numCards = 1) {
+    function assignRandomCards(spawnPointElement, numCards = 1, addToHistoryFlag = false) {
         const cardInfo = spawnPointElement.querySelector('.card-info');
-        
+
         if (!cardsLoaded || !ZombicideCards.cards || ZombicideCards.cards.length === 0) {
             cardInfo.innerHTML = '<div class="card-loading">Cards not loaded</div>';
             return [];
@@ -325,14 +441,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const card = availableCards[randomIndex];
                 drawnCards.push(card);
             }
-            
+
             cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
             // Store card IDs on the element for future reference
             spawnPointElement.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
-            
+
+            // Add to history if requested
+            if (addToHistoryFlag) {
+                const spawnPointTitle = spawnPointElement.querySelector('.spawn-title').textContent;
+                addToHistory(spawnPointTitle, drawnCards);
+            }
+
             // Save session after assigning cards
             setTimeout(() => saveSession(), 100);
-            
+
             return drawnCards;
         } else {
             cardInfo.innerHTML = '<div class="card-loading">No cards available for current settings</div>';
@@ -423,6 +545,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Update display with all cards
         const cardInfo = spawnPoint.querySelector('.card-info');
         cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
+
+        // Add to history
+        const spawnPointTitle = spawnPoint.querySelector('.spawn-title').textContent;
+        addToHistory(spawnPointTitle, drawnCards);
     }
 
 
@@ -451,7 +577,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // First, assign random cards to all spawn points
         spawnPoints.forEach(spawnPoint => {
-            assignRandomCard(spawnPoint);
+            assignRandomCards(spawnPoint, 1, true); // Enable history tracking
         });
 
         // Immediately process Double Spawn chains (no delay to prevent flickering)
@@ -756,6 +882,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
+
+    // Load and initialize history
+    spawnHistory = loadHistory();
+    updateHistoryDisplay();
 
     console.log('Zombicide project initialized successfully!');
 });

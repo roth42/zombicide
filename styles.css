@@ -838,3 +838,123 @@ footer {
         font-size: 0.9rem;
     }
 }
+
+/* History section styles */
+#history {
+    margin-top: 3rem;
+}
+
+.history-container {
+    max-height: 400px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.history-empty {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 2rem;
+}
+
+.history-entry {
+    margin-bottom: 0.5rem;
+}
+
+.history-line {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    font-size: 0.9rem;
+    color: #ecf0f1;
+}
+
+.history-spawn-point {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.card-number {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    margin: 0 0.2rem;
+    background: rgba(52, 152, 219, 0.2);
+    border: 1px solid #3498db;
+    border-radius: 4px;
+    color: #3498db;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.card-number:hover {
+    background: rgba(52, 152, 219, 0.4);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.card-json-panels {
+    margin-top: 0.5rem;
+}
+
+.card-json-panel {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.card-json-header {
+    background: rgba(52, 152, 219, 0.2);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-json-header span {
+    font-weight: bold;
+    color: #3498db;
+    font-size: 0.9rem;
+}
+
+.close-json {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+}
+
+.close-json:hover {
+    background: rgba(231, 76, 60, 0.2);
+}
+
+.card-json-content {
+    padding: 0.75rem;
+    margin: 0;
+    background: transparent;
+    color: #ecf0f1;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
