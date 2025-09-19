@@ -623,17 +623,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // Test scenario: Assign a Double Spawn card to the first spawn point
+        // Test scenario: Assign a Double Spawn card to a random spawn point
         console.log('Testing Double Spawn scenario...');
-        const firstSpawnPoint = spawnPoints[0];
+        const randomSpawnIndex = Math.floor(Math.random() * spawnPoints.length);
+        const randomSpawnPoint = spawnPoints[randomSpawnIndex];
         const doubleSpawnCard = doubleSpawnCards[Math.floor(Math.random() * doubleSpawnCards.length)];
-        
-        // Assign the Double Spawn card to first spawn point (single card)
-        assignSpecificCards(firstSpawnPoint, [doubleSpawnCard.id]);
+
+        // Assign the Double Spawn card to random spawn point (single card)
+        assignSpecificCards(randomSpawnPoint, [doubleSpawnCard.id]);
 
         // Assign single random cards to other spawn points
-        for (let i = 1; i < spawnPoints.length; i++) {
-            assignRandomCards(spawnPoints[i], 1);
+        for (let i = 0; i < spawnPoints.length; i++) {
+            if (i !== randomSpawnIndex) {
+                assignRandomCards(spawnPoints[i], 1);
+            }
         }
 
         // Process Double Spawn chains after cards are assigned
@@ -643,31 +646,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 500);
     }
 
-    // Add test button functionality (if running in development)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Create and add test button for local development
+    // Add test button functionality (if debug parameter is present)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('debug') === 'true') {
+        // Create and add test button for debugging
         const testButton = document.createElement('button');
         testButton.textContent = 'Test Double Spawn';
         testButton.className = 'spawn-btn';
         testButton.style.marginLeft = '10px';
         testButton.addEventListener('click', testDoubleSpawnScenario);
-        
-        const testMultiButton = document.createElement('button');
-        testMultiButton.textContent = 'Test 2 Cards';
-        testMultiButton.className = 'spawn-btn';
-        testMultiButton.style.marginLeft = '10px';
-        testMultiButton.addEventListener('click', function() {
-            const spawnPoints = document.querySelectorAll('.spawn-point');
-            spawnPoints.forEach(sp => {
-                assignRandomCards(sp, 2);
-            });
-            setTimeout(() => saveSession(), 500);
-        });
-        
+
         const spawnControl = document.querySelector('.spawn-control');
         if (spawnControl) {
             spawnControl.appendChild(testButton);
-            spawnControl.appendChild(testMultiButton);
         }
     }
     
