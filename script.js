@@ -376,21 +376,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const cardIds = spawnPoint.dataset.cardIds ? JSON.parse(spawnPoint.dataset.cardIds) : [];
                 const cards = cardIds.map(id => ZombicideCards.cards.find(c => c.id == id)).filter(Boolean);
                 
-                // Check if any card is a Double Spawn
-                const hasDoubleSpawn = cards.some(card => card.doubleSpawn);
-                
-                if (hasDoubleSpawn) {
+                // Count Double Spawn cards
+                const doubleSpawnCount = cards.filter(card => card.doubleSpawn).length;
+
+                if (doubleSpawnCount > 0) {
                     // Mark this spawn point as spawning nothing due to Double Spawn
                     spawnPoint.classList.add('double-spawn-source');
-                    
+
                     // Find next spawn point (wrapping around)
                     const nextIndex = (i + 1) % spawnPoints.length;
                     const nextSpawnPoint = spawnPoints[nextIndex];
-                    
-                    // Make the next spawn point draw two cards
-                    drawTwoCardsForDoubleSpawn(nextSpawnPoint);
+
+                    // Make the next spawn point draw cards (2 per Double Spawn)
+                    const cardsToDrawCount = doubleSpawnCount * 2;
+                    drawCardsForDoubleSpawn(nextSpawnPoint, cardsToDrawCount);
                     nextSpawnPoint.classList.add('double-spawn-target');
-                    
+
                     chainProcessing = true;
                     break; // Process one Double Spawn at a time
                 }
@@ -398,29 +399,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Function to draw two cards for a spawn point due to Double Spawn
-    function drawTwoCardsForDoubleSpawn(spawnPoint) {
+    // Function to draw cards for a spawn point due to Double Spawn
+    function drawCardsForDoubleSpawn(spawnPoint, numCards) {
         const level = getCurrentHeroLevel();
         const availableCards = getAvailableCards(level);
-        
+
         if (availableCards.length === 0) {
             return;
         }
 
-        // Draw exactly two random cards
+        // Draw the specified number of random cards
         const drawnCards = [];
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < numCards; i++) {
             const randomIndex = Math.floor(Math.random() * availableCards.length);
             drawnCards.push(availableCards[randomIndex]);
         }
 
-        // Check if any of the drawn cards is a Double Spawn
-        const hasDoubleSpawn = drawnCards.some(card => card.doubleSpawn);
-
-        // Store the cards and update display regardless of Double Spawn status
+        // Store the cards and update display
         spawnPoint.dataset.cardIds = JSON.stringify(drawnCards.map(c => c.id));
 
-        // Update display with both cards
+        // Update display with all cards
         const cardInfo = spawnPoint.querySelector('.card-info');
         cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
     }
