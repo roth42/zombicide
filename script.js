@@ -347,7 +347,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to process Double Spawn chains across all spawn points
     function processDoubleSpawnChains() {
-        const spawnPoints = Array.from(document.querySelectorAll('.spawn-point'));
+        // Get spawn points in their current visual order (DOM children order)
+        const container = document.querySelector('.spawn-points-container');
+        const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));
         if (spawnPoints.length === 0) return;
 
         // Clear any existing Double Spawn effects
@@ -436,8 +438,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to spawn all cards with Double Spawn rules
     function spawnAllWithDoubleSpawnRules() {
-        const spawnPoints = document.querySelectorAll('.spawn-point');
-        
+        // Get spawn points in their current visual order
+        const container = document.querySelector('.spawn-points-container');
+        const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));
+
         // First, assign random cards to all spawn points
         spawnPoints.forEach(spawnPoint => {
             const cardInfo = spawnPoint.querySelector('.card-info');
@@ -605,7 +609,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to test Double Spawn scenarios
     function testDoubleSpawnScenario() {
-        const spawnPoints = document.querySelectorAll('.spawn-point');
+        // Get spawn points in their current visual order
+        const container = document.querySelector('.spawn-points-container');
+        const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));
         if (spawnPoints.length < 3) {
             alert('Need at least 3 spawn points to test Double Spawn scenarios');
             return;
