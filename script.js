@@ -443,18 +443,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         const container = document.querySelector('.spawn-points-container');
         const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));
 
-        // First, assign random cards to all spawn points
+        // Show loading state for all spawn points
         spawnPoints.forEach(spawnPoint => {
             const cardInfo = spawnPoint.querySelector('.card-info');
             cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
+        });
+
+        // First, assign random cards to all spawn points
+        spawnPoints.forEach(spawnPoint => {
             assignRandomCard(spawnPoint);
         });
 
-        // After a short delay to ensure cards are assigned, process Double Spawn chains
-        setTimeout(() => {
-            processDoubleSpawnChains();
-            saveSession();
-        }, 500);
+        // Immediately process Double Spawn chains (no delay to prevent flickering)
+        processDoubleSpawnChains();
+        saveSession();
     }
 
     function addSpawnPoint(title = null, cardId = null) {
