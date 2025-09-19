@@ -684,9 +684,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const cardInfo = spawnPoint.querySelector('.card-info');
         cardInfo.innerHTML = createMultiCardDisplay(drawnCards);
 
-        // Add to history
-        const spawnPointTitle = spawnPoint.querySelector('.spawn-title').textContent;
-        addToHistory(spawnPointTitle, drawnCards);
+        // Note: History tracking is now handled in spawnAllWithDoubleSpawnRules after all processing
     }
 
 
@@ -718,13 +716,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             cardInfo.innerHTML = '<div class="card-loading">Drawing new card...</div>';
         });
 
-        // First, assign random cards to all spawn points
+        // First, assign random cards to all spawn points (WITHOUT history tracking)
         spawnPoints.forEach(spawnPoint => {
-            assignRandomCards(spawnPoint, 1, true); // Enable history tracking
+            assignRandomCards(spawnPoint, 1, false); // Disable history tracking initially
         });
 
-        // Immediately process Double Spawn chains (no delay to prevent flickering)
+        // Process Double Spawn chains
         processDoubleSpawnChains();
+
+        // Now add all final results to history (after Double Spawn processing)
+        spawnPoints.forEach(spawnPoint => {
+            const cardIds = spawnPoint.dataset.cardIds ? JSON.parse(spawnPoint.dataset.cardIds) : [];
+            if (cardIds.length > 0) {
+                const cards = cardIds.map(id => ZombicideCards.cards.find(c => c.id == id)).filter(Boolean);
+                if (cards.length > 0) {
+                    const spawnPointTitle = spawnPoint.querySelector('.spawn-title').textContent;
+                    addToHistory(spawnPointTitle, cards);
+                }
+            }
+        });
+
         saveSession();
     }
 
@@ -878,72 +889,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add event listener for Wolfz toggle changes
     document.getElementById('wolfz-enabled').addEventListener('change', function() {
         console.log('Wolfz expansion', this.checked ? 'enabled' : 'disabled');
-        clearAllCards();
-        saveSession();
+        resetSession();
     });
 
-    // Function to test Double Spawn scenarios
-    function testDoubleSpawnScenario() {
-        // Get spawn points in their current visual order
-        const container = document.querySelector('.spawn-points-container');
-        const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));
-        if (spawnPoints.length < 3) {
-            alert('Need at least 3 spawn points to test Double Spawn scenarios');
-            return;
-        }
-
-        // Get Double Spawn cards from the current level
-        const level = getCurrentHeroLevel();
-        const availableCards = getAvailableCards(level);
-        const doubleSpawnCards = availableCards.filter(card => card.doubleSpawn);
-
-        if (doubleSpawnCards.length === 0) {
-            alert('No Double Spawn cards available for the current level and expansion settings');
-            return;
-        }
-
-        // Test scenario: Assign a Double Spawn card to a random spawn point
-        console.log('Testing Double Spawn scenario...');
-        const randomSpawnIndex = Math.floor(Math.random() * spawnPoints.length);
-        const randomSpawnPoint = spawnPoints[randomSpawnIndex];
-        const doubleSpawnCard = doubleSpawnCards[Math.floor(Math.random() * doubleSpawnCards.length)];
-
-        // Mark the Double Spawn card as drawn to prevent it from being drawn again
-        deckState.drawnCards.add(doubleSpawnCard.id);
-        saveDeckState();
-
-        // Assign the Double Spawn card to random spawn point (single card)
-        assignSpecificCards(randomSpawnPoint, [doubleSpawnCard.id]);
-
-        // Assign single random cards to other spawn points
-        for (let i = 0; i < spawnPoints.length; i++) {
-            if (i !== randomSpawnIndex) {
-                assignRandomCards(spawnPoints[i], 1);
-            }
-        }
-
-        // Process Double Spawn chains after cards are assigned
-        setTimeout(() => {
-            processDoubleSpawnChains();
-            saveSession();
-        }, 500);
-    }
-
-    // Add test button functionality (if debug parameter is present)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('debug') === 'true') {
-        // Create and add test button for debugging
-        const testButton = document.createElement('button');
-        testButton.textContent = 'Test Double Spawn';
-        testButton.className = 'spawn-btn';
-        testButton.style.marginLeft = '10px';
-        testButton.addEventListener('click', testDoubleSpawnScenario);
-
-        const spawnControl = document.querySelector('.spawn-control');
-        if (spawnControl) {
-            spawnControl.appendChild(testButton);
-        }
-    }
     
     setupAllDragAndDrop();
     
