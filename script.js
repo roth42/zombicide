@@ -57,14 +57,23 @@ function loadHistory() {
     }
 }
 
+// Generate a unique session ID for each spawn action
+let currentSpawnSessionId = null;
+
 function addToHistory(spawnPointTitle, cards, timestamp = null) {
+    // If no current session, create a new one
+    if (!currentSpawnSessionId) {
+        currentSpawnSessionId = Date.now() + Math.random();
+    }
+
     const entry = {
         id: Date.now() + Math.random(),
         spawnPoint: spawnPointTitle,
         cards: cards,
         timestamp: timestamp || new Date().toISOString(),
         heroLevel: getCurrentHeroLevel(),
-        wolfzEnabled: isWolfzEnabled()
+        wolfzEnabled: isWolfzEnabled(),
+        spawnSessionId: currentSpawnSessionId
     };
 
     spawnHistory.unshift(entry); // Add to beginning
@@ -87,12 +96,66 @@ function updateHistoryDisplay() {
         return;
     }
 
-    const historyHTML = spawnHistory.map(entry => createHistoryEntryHTML(entry)).join('');
+    // Group entries by spawn session
+    const groupedEntries = [];
+    const sessionMap = new Map();
+
+    spawnHistory.forEach(entry => {
+        const sessionId = entry.spawnSessionId || entry.id; // Fallback for legacy entries
+        if (!sessionMap.has(sessionId)) {
+            sessionMap.set(sessionId, []);
+            groupedEntries.push(sessionId);
+        }
+        sessionMap.get(sessionId).push(entry);
+    });
+
+    const historyHTML = groupedEntries.map((sessionId, index) => {
+        const entries = sessionMap.get(sessionId);
+        const roundNumber = groupedEntries.length - index; // Most recent is round 1
+        return createGroupedHistoryHTML(entries, roundNumber);
+    }).join('');
+
     container.innerHTML = historyHTML;
 }
 
+function createGroupedHistoryHTML(entries, roundNumber) {
+    if (!entries || entries.length === 0) return '';
+
+    // Sort entries within the group (newest first within the session)
+    const sortedEntries = entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Create individual entry lines with bullet points and indentation
+    const entryLines = sortedEntries.map(entry => {
+        const cardNumbers = entry.cards.map(card =>
+            `<span class="card-number" onclick="toggleCardJson('${entry.id}', ${card.id})">#${card.id}</span>`
+        ).join(' ');
+
+        return `
+            <div class="history-spawn-item">
+                <div class="history-spawn-line">
+                    <span style="color: #3498db; font-weight: bold; margin-right: 0.5rem;">•</span>${entry.spawnPoint}: ${cardNumbers}
+                </div>
+                <div class="card-json-panels">
+                    ${entry.cards.map(card => createCardJsonPanel(entry.id, card)).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="history-group" data-session-id="${entries[0].spawnSessionId || entries[0].id}">
+            <div class="history-group-header">
+                <span class="history-round">Spawn Round ${roundNumber}</span>
+            </div>
+            <div class="history-group-content">
+                ${entryLines}
+            </div>
+        </div>
+    `;
+}
+
 function createHistoryEntryHTML(entry) {
-    // Create clickable card numbers
+    // Legacy function - keeping for compatibility
     const cardNumbers = entry.cards.map(card =>
         `<span class="card-number" onclick="toggleCardJson('${entry.id}', ${card.id})">#${card.id}</span>`
     ).join(' ');
@@ -565,6 +628,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to spawn all cards with Double Spawn rules
     function spawnAllWithDoubleSpawnRules() {
+        // Reset the spawn session ID for this new spawn action
+        currentSpawnSessionId = null;
+
         // Get spawn points in their current visual order
         const container = document.querySelector('.spawn-points-container');
         const spawnPoints = Array.from(container.children).filter(child => child.classList.contains('spawn-point'));

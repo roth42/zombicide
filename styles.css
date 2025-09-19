@@ -842,14 +842,13 @@ footer {
 /* History section styles */
 #history {
     margin-top: 3rem;
+    text-align: left;
 }
 
 .history-container {
     max-height: 400px;
     overflow-y: auto;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 1rem;
+    text-align: left;
 }
 
 .history-empty {
@@ -877,9 +876,46 @@ footer {
     color: #3498db;
 }
 
+/* New grouped history styles */
+.history-group {
+    margin-bottom: 2rem;
+}
+
+.history-group-header {
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
+.history-round {
+    font-size: 1.2rem;
+    color: #3498db;
+    font-weight: bold;
+    text-align: left !important;
+    display: block;
+    width: 100%;
+}
+
+.history-group-content {
+    margin-left: 0;
+}
+
+.history-spawn-item {
+    margin-bottom: 0.75rem;
+}
+
+.history-spawn-line {
+    padding: 0.25rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    font-size: 1rem;
+    color: #000000;
+    font-weight: 500;
+    position: relative;
+}
+
 .card-number {
     display: inline-block;
-    padding: 0.2rem 0.4rem;
+    padding: 0.3rem 0.6rem;
     margin: 0 0.2rem;
     background: rgba(52, 152, 219, 0.2);
     border: 1px solid #3498db;
